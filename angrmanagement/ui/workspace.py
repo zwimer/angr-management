@@ -15,6 +15,7 @@ from .widgets.qsmart_dockwidget import QSmartDockWidget
 
 from .. import comms
 
+
 _l = logging.getLogger(__name__)
 
 
@@ -47,6 +48,7 @@ class Workspace:
         for tab in default_tabs:
             self.add_view(tab, tab.caption, tab.category)
 
+
     #
     # Properties
     #
@@ -60,7 +62,7 @@ class Workspace:
     #
 
     def on_function_selected(self, function):
-        comms.select_func(function.addr)
+        comms.set_poi_func(function)
         self.views_by_category['disassembly'][0].display_function(function)
 
     def on_cfg_generated(self):

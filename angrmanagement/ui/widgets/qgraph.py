@@ -3,6 +3,7 @@ import logging
 from PySide2.QtWidgets import QGraphicsScene, QGraphicsView
 from PySide2.QtGui import QPainter, QKeyEvent
 from PySide2.QtCore import Qt, QSize, Signal, QPoint, QEvent
+from angrmanagement import comms
 
 _l = logging.getLogger('ui.widgets.qgraph')
 
@@ -149,6 +150,7 @@ class QBaseGraph(QZoomingGraphicsView):
 
             block.addr_to_insns[insn_addr].select()
 
+        comms.set_poi_addr(insn_addr)
         self.viewport().update()
 
     def unselect_instruction(self, insn_addr):
