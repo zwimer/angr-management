@@ -12,6 +12,7 @@ from ..dialogs.new_state import NewState
 from ..dialogs.xref import XRef
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from .view import BaseView
+from angrmanagement import poi
 
 
 class DisassemblyView(BaseView):
@@ -293,6 +294,13 @@ class DisassemblyView(BaseView):
 
             # redraw the current block
             self._flow_graph.update_label(addr, is_renaming=is_renaming)
+
+            #
+            # HACK: This is more than a simple 'interest' POI so we'll
+            #       just give 10 POIs for this addr if we rename it
+            #
+            for i in range(0,10):
+                poi.add_new_poi(poi.HumanPOIAddr(addr))
 
     def avoid_addr_in_exec(self, addr):
 

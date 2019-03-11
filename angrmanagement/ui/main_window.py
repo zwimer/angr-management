@@ -17,7 +17,7 @@ from .workspace import Workspace
 from .dialogs.load_binary import LoadBinary, LoadBinaryError
 from .dialogs.new_state import NewState
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
-
+from .. import poi
 
 class MainWindow(QMainWindow):
     """
@@ -66,6 +66,9 @@ class MainWindow(QMainWindow):
                 self._load_database(file_to_open)
             else:
                 self._open_loadbinary_dialog(file_to_open)
+
+        self.update_worker = poi.UpdateWorker(self)
+        self.update_worker.start()
 
     #
     # Properties

@@ -3,8 +3,6 @@ from queue import Queue
 import time
 import socket
 
-actions = Queue()
-remote_actions = Queue()
 
 
 class HumanPOI:
@@ -26,46 +24,55 @@ class HumanPOIFunc(HumanPOI):
         self.func = func
 
 
-def select_func(func):
-    print("User selected function {} at 0x{:x}".format(func, func.addr))
-    actions.put(HumanPOIFunc(func))
-
-
-def select_addr(addr):
-    print("User selected address 0x{:x}".format(addr))
-    actions.put(HumanPOIAddr(addr))
-
-
-def add_rename(addr):
-    print("User renamed label at 0x{:x}".format(addr))
-    actions.put(HumanPOIAddr(addr))
-
-
 class UpdateWorker(QtCore.QThread):
     updatePOIs = QtCore.Signal(HumanPOI)
+    # Note that these are class attributes, not instance. There's no
+    # reason to have several queues floating around... I think.
+    actions = Queue()
+    remote_actions = Queue()
 
     def __init__(self, main_window):
         QtCore.QThread.__init__(self)
         self.mw = main_window
-        fake_remote_actions = [0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a,
-                               0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a,
-                               0x0040085b, 0x0040085b, 0x0040085b, 0x0040085b, 0x0040085e]
+
+        ###################################
+        fake_remote_actions = [0x0040085a, 0x0040085b, 0x0040085e, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a,
+                               0x00400750, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a,
+                               0x0040085a, 0x0040085b, 0x0040085e, 0x0040085e, 0x0040085e]
 
         for a in fake_remote_actions:
-            remote_actions.put(HumanPOIAddr(a))
+            self.remote_actions.put(HumanPOIAddr(a))
+        ###################################
 
     def run(self):
         while True:
-            time.sleep(1)
-            # Send out updates on our user
-            if not actions.empty():
-                h = actions.get()
-                print("Sending update: 0x{}".format(h.addr))
-                self.updatePOIs.emit(h)
-
+            need_update = False
+            cg = self.mw.workspace.views_by_category['disassembly'][0].current_graph
             # Get updates about other users
-            if not remote_actions.empty():
-                h = remote_actions.get()
-                print("Got update at addr 0x{}".format(h.addr))
-                self.mw.workspace.views_by_category['disassembly'][0].current_graph.add_inst_interest(h.addr)
+            if not self.remote_actions.empty():
+                h = self.remote_actions.get()
+                print("Got update at addr {:#10x}".format(h.addr))
+                cg.add_inst_interest(h.addr)
+                need_update = True
 
+            # Send out updates on our user
+            if not self.actions.empty():
+                h = self.actions.get()
+                print("Sending update: {:#10x}".format(h.addr))
+                self.updatePOIs.emit(h)
+                cg.add_inst_interest(h.addr)
+                need_update = True
+
+            if need_update:
+                cg.viewport().update()
+
+            time.sleep(0.1)
+
+
+def add_new_poi(poi):
+    if poi.addr:
+        print("New user POI @ {:#10x}".format(poi.addr))
+    else:
+        print("**NO ADDRESS** New user POI") # Unsure how/if we'll use POIs without an address
+
+    UpdateWorker.actions.put(poi)

@@ -32,7 +32,6 @@ class QInstruction(QGraphObject):
         self.out_branch = out_branch
         self._config = config
         self.mode = mode
-
         self.selected = False
 
         # all "widgets"
@@ -45,6 +44,8 @@ class QInstruction(QGraphObject):
         self._string_width = None
 
         self._init_widgets()
+
+        self.interest = 0
 
         #self.setContextMenuPolicy(Qt.CustomContextMenu)
         #self.connect(self, SIGNAL('customContextMenuRequested(QPoint)'), self._on_context_menu)
@@ -176,12 +177,26 @@ class QInstruction(QGraphObject):
         if self._string is not None:
             self._width += self.GRAPH_STRING_SPACING + self._string_width
 
+    def _paint_interest(self, painter):
+        if self.interest:
+            # starting at a pale green 0x9ddd8b
+            r = max(0x9d - 2*self.interest, 0)
+            g = min(0xdd + self.interest, 255)
+            b = max(0x8b - 2*self.interest, 0)
+            interest_color = QColor(r, g, b)
+            painter.setPen(interest_color)
+            painter.setBrush(interest_color)
+            painter.drawRect(self.x, self.y, self.width, self.height)
+
     def _paint_graph(self, painter):
+        if self.interest and not self.selected:
+            self._paint_interest(painter)
 
         # selection background
         if self.selected:
-            painter.setPen(QColor(0xef, 0xbf, 0xba))
-            painter.setBrush(QColor(0xef, 0xbf, 0xba))
+            select_color = QColor(0xef, 0xbf, 0xba)
+            painter.setPen(select_color)
+            painter.setBrush(select_color)
             painter.drawRect(self.x, self.y, self.width, self.height)
 
         x = self.x

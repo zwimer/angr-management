@@ -3,7 +3,7 @@ import logging
 from PySide2.QtWidgets import QGraphicsScene, QGraphicsView
 from PySide2.QtGui import QPainter, QKeyEvent
 from PySide2.QtCore import Qt, QSize, Signal, QPoint, QEvent
-from angrmanagement import comms
+from angrmanagement import poi
 
 _l = logging.getLogger('ui.widgets.qgraph')
 
@@ -134,6 +134,14 @@ class QBaseGraph(QZoomingGraphicsView):
         else:
             self.reload()
 
+    def add_inst_interest(self, insn_addr):
+        block = self._insn_addr_to_block.get(insn_addr, None)
+        if block is None:
+            print("**ERROR** Failed to find block for address: {:#10x}".format(insn_addr))
+            return
+
+        block.addr_to_insns[insn_addr].interest += 1
+
     def select_instruction(self, insn_addr, unique=True):
         block = self._insn_addr_to_block.get(insn_addr, None)
         if block is None:
@@ -150,7 +158,7 @@ class QBaseGraph(QZoomingGraphicsView):
 
             block.addr_to_insns[insn_addr].select()
 
-        comms.set_poi_addr(insn_addr)
+        poi.add_new_poi(poi.HumanPOIAddr(insn_addr))
         self.viewport().update()
 
     def unselect_instruction(self, insn_addr):
@@ -185,6 +193,7 @@ class QBaseGraph(QZoomingGraphicsView):
 
             block.addr_to_insns[insn_addr].select_operand(operand_idx)
 
+        poi.add_new_poi(poi.HumanPOIAddr(insn_addr))
         self.viewport().update()
 
     def unselect_operand(self, insn_addr, operand_idx):

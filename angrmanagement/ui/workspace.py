@@ -13,7 +13,7 @@ from ..config import Conf
 from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 
-from .. import comms
+from .. import poi
 
 
 _l = logging.getLogger(__name__)
@@ -62,7 +62,7 @@ class Workspace:
     #
 
     def on_function_selected(self, function):
-        comms.set_poi_func(function)
+        poi.add_new_poi(poi.HumanPOIFunc(function))
         self.views_by_category['disassembly'][0].display_function(function)
 
     def on_cfg_generated(self):
