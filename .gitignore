@@ -1,5 +1,8 @@
 projects
 
+# PyCharm
+.idea/
+
 # Python cruft
 *.pyc
 *.pyo
