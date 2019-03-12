@@ -3,7 +3,51 @@ from queue import Queue
 import time
 import socket
 
+#########################################################
+from angr.knowledge_plugins.plugin import KnowledgeBasePlugin
 
+
+class POIs(KnowledgeBasePlugin):
+
+    def __init__(self, kb):
+        self._kb = kb
+        self._interest = {}
+
+    def __iter__(self):
+        return self._interest.__iter__()
+
+    def __getitem__(self, k):
+        ret = 0 # default
+        try:
+            ret = self._interest[k]
+        except KeyError:
+            pass
+
+        return ret
+
+    def __setitem__(self, k, v):
+        del self[k]
+        self._interest[k] = v
+
+    def __delitem__(self, k):
+        if k in self._interest:
+            del self._interest[k]
+
+    def __contains__(self, k):
+        return k in self._interest
+
+    def get(self, addr):
+        return self[addr]
+
+    def copy(self):
+        o = POIs(self._kb)
+        o._interest = {k: v for k, v in self._interest.items()}
+
+
+KnowledgeBasePlugin.register_default('pois', POIs)
+
+
+#########################################################
 
 class HumanPOI:
     def __init__(self, addr):
@@ -36,43 +80,64 @@ class UpdateWorker(QtCore.QThread):
         self.mw = main_window
 
         ###################################
-        fake_remote_actions = [0x0040085a, 0x0040085b, 0x0040085e, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a,
-                               0x00400750, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a,
-                               0x0040085a, 0x0040085b, 0x0040085e, 0x0040085e, 0x0040085e]
+        fake_remote_actions = \
+            [0x0040085a, 0x0040085b, 0x0040085e,  # first three addrs in main(), first should have 12
+             0x00400750,  # not in first view, should error in add_inst_interest()
+             0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a,  # repeats of above
+             0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a,  # repeats of above
+             0x0040085a, 0x0040085b, 0x0040085e, 0x0040085e, 0x0040085e]  # repeats of above
 
         for a in fake_remote_actions:
             self.remote_actions.put(HumanPOIAddr(a))
         ###################################
 
     def run(self):
+        pp = None
+        while pp is None:
+            if self.mw.workspace.instance.cfg is not None:
+                pp = self.mw.workspace.instance.cfg.kb.get_plugin('pois')
+            else:
+                time.sleep(1) # wait a second for analysis to finish
+
+        def add_pp_addr(addr):
+            if addr in pp:
+                pp[addr] += 1
+            else:
+                pp[addr] = 1
+
         while True:
             need_update = False
+            # Get the current view (func graph vs linear)
             cg = self.mw.workspace.views_by_category['disassembly'][0].current_graph
+
             # Get updates about other users
             if not self.remote_actions.empty():
                 h = self.remote_actions.get()
                 print("Got update at addr {:#10x}".format(h.addr))
-                cg.add_inst_interest(h.addr)
-                need_update = True
+                add_pp_addr(h.addr)
+                need_update = cg.add_inst_interest(h.addr)
 
             # Send out updates on our user
             if not self.actions.empty():
                 h = self.actions.get()
                 print("Sending update: {:#10x}".format(h.addr))
                 self.updatePOIs.emit(h)
-                cg.add_inst_interest(h.addr)
-                need_update = True
+                add_pp_addr(h.addr)
+                need_update = cg.add_inst_interest(h.addr)
 
             if need_update:
                 cg.viewport().update()
 
-            time.sleep(0.1)
+            time.sleep(0.5)
 
 
+# Called throughout the UI to add a POI. The caller creates the POI object.
 def add_new_poi(poi):
-    if poi.addr:
+    if not isinstance(poi, HumanPOIFunc) and poi.addr:
         print("New user POI @ {:#10x}".format(poi.addr))
+        UpdateWorker.actions.put(poi)
+    elif isinstance(poi, HumanPOIFunc):
+        print("New user POI @ {:#10x} (function '{}')".format(poi.addr, poi.func.name))
     else:
-        print("**NO ADDRESS** New user POI") # Unsure how/if we'll use POIs without an address
+        print("**NO ADDRESS** New user POI")  # Unsure how/if we'll use POIs without an address
 
-    UpdateWorker.actions.put(poi)

@@ -138,9 +138,10 @@ class QBaseGraph(QZoomingGraphicsView):
         block = self._insn_addr_to_block.get(insn_addr, None)
         if block is None:
             print("**ERROR** Failed to find block for address: {:#10x}".format(insn_addr))
-            return
+            return False
 
         block.addr_to_insns[insn_addr].interest += 1
+        return True
 
     def select_instruction(self, insn_addr, unique=True):
         block = self._insn_addr_to_block.get(insn_addr, None)

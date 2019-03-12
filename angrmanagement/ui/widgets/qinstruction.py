@@ -46,6 +46,9 @@ class QInstruction(QGraphObject):
         self._init_widgets()
 
         self.interest = 0
+        p = self.disasm.kb.get_plugin('pois')
+        if p:
+            self.interest = p[self.insn.addr]
 
         #self.setContextMenuPolicy(Qt.CustomContextMenu)
         #self.connect(self, SIGNAL('customContextMenuRequested(QPoint)'), self._on_context_menu)
@@ -179,10 +182,11 @@ class QInstruction(QGraphObject):
 
     def _paint_interest(self, painter):
         if self.interest:
-            # starting at a pale green 0x9ddd8b
-            r = max(0x9d - 2*self.interest, 0)
-            g = min(0xdd + self.interest, 255)
-            b = max(0x8b - 2*self.interest, 0)
+            # starting at a light green (0xd6ffdb) to dark green (0x003d13)
+
+            r = max(0xd6 - 2 * self.interest, 0)
+            g = max(0xff - self.interest, 0x3d)
+            b = max(0xd6 - 2 * self.interest, 0x13)
             interest_color = QColor(r, g, b)
             painter.setPen(interest_color)
             painter.setBrush(interest_color)
