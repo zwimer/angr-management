@@ -126,6 +126,13 @@ class QFunctionTableModel(QAbstractTableModel):
 
             return QBrush(color)
 
+        elif role == Qt.BackgroundColorRole:
+            color = QColor(0xff, 0xff, 0xff)
+            if func.addr == func.binary.entry:
+                color = QColor(0xe5, 0xfb, 0xff)
+
+            return QBrush(color)
+
     def sort(self, column, order):
         mapping = {
             self.NAME_COL:
