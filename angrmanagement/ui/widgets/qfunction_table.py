@@ -19,12 +19,13 @@ class QFunctionTableModel(QAbstractTableModel):
     SIZE_COL = 4
     BLOCKS_COL = 5
 
-    def __init__(self, func_list=None):
+    def __init__(self, func_list=None, poi_plugin=None):
 
         super(QFunctionTableModel, self).__init__()
 
         self._func_list = None
         self._raw_func_list = func_list
+        self._poi_plugin = poi_plugin
 
     def __len__(self):
         if self._func_list is not None:
@@ -44,6 +45,15 @@ class QFunctionTableModel(QAbstractTableModel):
         self._func_list = None
         self._raw_func_list = v
         self.emit(SIGNAL("layoutChanged()"))
+
+    @property
+    def poi_plugin(self):
+        return self._poi_plugin
+
+    @poi_plugin.setter
+    def poi_plugin(self, v):
+        self._poi_plugin = v
+        #self.emit(SIGNAL("layoutChanged()"))
 
     def filter(self, keyword):
         if not keyword:
@@ -128,8 +138,15 @@ class QFunctionTableModel(QAbstractTableModel):
 
         elif role == Qt.BackgroundColorRole:
             color = QColor(0xff, 0xff, 0xff)
-            if func.addr == func.binary.entry:
+            if func.binary._entry is not None and func.addr == func.binary.entry:
                 color = QColor(0xe5, 0xfb, 0xff)
+            elif self.poi_plugin:
+                interest = self.poi_plugin[func.name]
+                if interest:
+                    r = max(0xd6 - 2 * interest, 0)
+                    g = max(0xff - interest, 0x3d)
+                    b = max(0xd6 - 2 * interest, 0x13)
+                    color = QColor(r, g, b)
 
             return QBrush(color)
 
@@ -218,6 +235,18 @@ class QFunctionTableView(QTableView):
         self._functions = functions
         self._model.func_list = list(self._functions.values())
 
+    @property
+    def poi_plugin(self):
+        if self._model:
+            return self._model.poi_plugin
+        else:
+            return None
+
+    @poi_plugin.setter
+    def poi_plugin(self, v):
+        if self._model:
+            self._model.poi_plugin = v
+
     def filter(self, keyword):
         self._model.filter(keyword)
 
@@ -291,6 +320,18 @@ class QFunctionTable(QWidget):
             self._table_view.function_manager = v
         else:
             raise ValueError("QFunctionTableView is uninitialized.")
+
+    @property
+    def poi_plugin(self):
+        if self._table_view:
+            return self._table_view.poi_plugin
+        else:
+            return None
+
+    @poi_plugin.setter
+    def poi_plugin(self, v):
+        if self._table_view:
+            self._table_view.poi_plugin = v
 
     #
     # Public methods

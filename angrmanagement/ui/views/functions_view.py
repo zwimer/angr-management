@@ -24,6 +24,8 @@ class FunctionsView(BaseView):
     #
 
     def reload(self):
+        # HACK: Set plugin first so layout is updated only once, with function_manager
+        self._function_table.poi_plugin = self.workspace.instance.cfg.kb.get_plugin('pois')
         self._function_table.function_manager = self.workspace.instance.cfg.functions
 
     def sizeHint(self):

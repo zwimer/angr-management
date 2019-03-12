@@ -8,6 +8,9 @@ from angr.knowledge_plugins.plugin import KnowledgeBasePlugin
 
 
 class POIs(KnowledgeBasePlugin):
+    # TODO: Save POI objects rather than just interest val
+    # TODO: With HumanPOIFunc, use addr so names don't matter
+    # TODO: Track unique members so interest count is weighted (2 people = bigger changes in color, etc)
 
     def __init__(self, kb):
         self._kb = kb
@@ -89,9 +92,13 @@ class UpdateWorker(QtCore.QThread):
 
         for a in fake_remote_actions:
             self.remote_actions.put(HumanPOIAddr(a))
+
         ###################################
 
     def run(self):
+        # We need to get the POI plugin. If it's not there, it's because
+        # the user hasn't loaded a binary or the project hasn't done its
+        # analysis yet.
         pp = None
         while pp is None:
             if self.mw.workspace.instance.cfg is not None:
@@ -99,33 +106,42 @@ class UpdateWorker(QtCore.QThread):
             else:
                 time.sleep(1) # wait a second for analysis to finish
 
-        def add_pp_addr(addr):
-            if addr in pp:
-                pp[addr] += 1
+        def add_poi_interest(key):
+            if key in pp:
+                pp[key] += 1
             else:
-                pp[addr] = 1
+                pp[key] = 1
 
         while True:
-            need_update = False
+            need_cg_update = False
+            need_fv_update = False
             # Get the current view (func graph vs linear)
             cg = self.mw.workspace.views_by_category['disassembly'][0].current_graph
 
             # Get updates about other users
             if not self.remote_actions.empty():
-                h = self.remote_actions.get()
-                print("Got update at addr {:#10x}".format(h.addr))
-                add_pp_addr(h.addr)
-                need_update = cg.add_inst_interest(h.addr)
+                new_poi = self.remote_actions.get()
+
+                print("Got update at addr {:#10x}".format(new_poi.addr))
+                add_poi_interest(new_poi.addr)
+                need_cg_update = cg.add_inst_interest(new_poi.addr)
 
             # Send out updates on our user
             if not self.actions.empty():
-                h = self.actions.get()
-                print("Sending update: {:#10x}".format(h.addr))
-                self.updatePOIs.emit(h)
-                add_pp_addr(h.addr)
-                need_update = cg.add_inst_interest(h.addr)
+                new_poi = self.actions.get()
+                if not isinstance(new_poi, HumanPOIFunc) and new_poi.addr:
+                    print("Sending update: {:#10x}".format(new_poi.addr))
+                    need_cg_update = cg.add_inst_interest(new_poi.addr)
+                    add_poi_interest(new_poi.addr)
+                elif isinstance(new_poi, HumanPOIFunc):
+                    print("Sending update: func {}".format(new_poi.func.name))
+                    add_poi_interest(new_poi.func.name)
+                    fv = self.mw.workspace.views_by_category['functions'][0]
+                    fv.reload()
 
-            if need_update:
+                self.updatePOIs.emit(new_poi)
+
+            if need_cg_update:
                 cg.viewport().update()
 
             time.sleep(0.5)
@@ -138,6 +154,7 @@ def add_new_poi(poi):
         UpdateWorker.actions.put(poi)
     elif isinstance(poi, HumanPOIFunc):
         print("New user POI @ {:#10x} (function '{}')".format(poi.addr, poi.func.name))
+        UpdateWorker.actions.put(poi)
     else:
         print("**NO ADDRESS** New user POI")  # Unsure how/if we'll use POIs without an address
 
