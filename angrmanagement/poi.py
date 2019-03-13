@@ -153,6 +153,7 @@ class UpdateWorker(QtCore.QThread):
             else:
                 time.sleep(0.1)
 
+
 def add_poi(addr, type='inst'):
     msg = angr_comm_pb2.HumanPOI()
     msg.tool = 'angr-management'
@@ -168,6 +169,39 @@ def add_poi(addr, type='inst'):
     UpdateWorker.local_pois.put(msg)
 
 
-if __name__ == '__main__':
-    fake_remote_actions = _make_fake_remote_actions()
+def test_pub_sub():
+    msg = angr_comm_pb2.HumanPOI()
+    msg.tool = 'angr-management'
+    msg.timestamp = int(time.time())
+    msg.source = 'TEST_REMOTE_SOURCE'
+    msg.file = 'TEST_BINARY_NAME'  # testlib/test_preload
+    msg.code_location = 0x0040085a
+    msg.loc_type = angr_comm_pb2.HumanPOI.INST_ADDR
 
+    import zmq
+    topic = b'poi'
+    pub_port = 44444
+    pub_context = zmq.Context()
+    pub_socket = pub_context.socket(zmq.PUB)
+    pub_socket.bind("tcp://*:%s" % pub_port)
+    time.sleep(1)
+    sub_context = zmq.Context()
+    sub_socket = sub_context.socket(zmq.SUB)
+    sub_socket.connect("tcp://127.0.0.1:{}".format(pub_port))
+    sub_socket.setsockopt(zmq.SUBSCRIBE, topic)
+    time.sleep(3)
+    while True:
+        pub_socket.send(topic + b' ' + msg.SerializeToString())
+        time.sleep(1)
+        topic_and_data = sub_socket.recv()
+        data = topic_and_data.split(b' ', 1)[1]
+
+        msg = angr_comm_pb2.HumanPOI()
+        msg.ParseFromString(data)
+        print(msg)
+        return
+
+
+if __name__ == '__main__':
+    #fake_remote_actions = _make_fake_remote_actions()
+    test_pub_sub()
