@@ -2,6 +2,7 @@ from PySide2 import QtCore
 from queue import Queue
 import time
 import socket
+import angr_comm_pb2
 
 #########################################################
 from angr.knowledge_plugins.plugin import KnowledgeBasePlugin
@@ -48,52 +49,57 @@ class POIs(KnowledgeBasePlugin):
 
 
 KnowledgeBasePlugin.register_default('pois', POIs)
-
-
 #########################################################
 
-class HumanPOI:
-    def __init__(self, addr):
-        self.tool = 'angr-management'
-        self.addr = addr
-        self.time = time.time()
-        self.fqdn = socket.getfqdn()
 
+######################### DEBUG #########################
+def _make_fake_remote_actions():
+    import time
+    fake_actions = []
+    addrs = \
+        [0x0040085a, 0x0040085b, 0x0040085e,  # first three addrs in main(), first should have 12
+         0x00400750,  # not in first view, should error in add_inst_interest()
+         0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a,  # repeats of above
+         0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a,  # repeats of above
+         0x0040085a, 0x0040085b, 0x0040085e, 0x0040085e, 0x0040085e]  # repeats of above
+    for addr in addrs:
+        msg = angr_comm_pb2.HumanPOI()
+        msg.tool = 'angr-management'
+        msg.timestamp = int(time.time())
+        msg.source = 'TEST_REMOTE_SOURCE'
+        msg.file = 'TEST_BINARY_NAME' # testlib/test_preload
+        msg.code_location = addr
+        msg.loc_type = angr_comm_pb2.HumanPOI.INST_ADDR
+        fake_actions.append(msg)
 
-class HumanPOIAddr(HumanPOI):
-    def __init__(self, addr):
-        super(HumanPOIAddr, self).__init__(addr)
-
-
-class HumanPOIFunc(HumanPOI):
-    def __init__(self, func):
-        super(HumanPOIFunc, self).__init__(func.addr)
-        self.func = func
-
+    # main function
+    msg = angr_comm_pb2.HumanPOI()
+    msg.tool = 'angr-management'
+    msg.timestamp = int(time.time())
+    msg.source = 'TEST_REMOTE_SOURCE'
+    msg.file = 'TEST_BINARY_NAME'   # testlib/test_preload
+    msg.code_location = 0x0040085a
+    msg.loc_type = angr_comm_pb2.HumanPOI.FUNC_ADDR
+    fake_actions.append(msg)
+    return fake_actions
+#########################################################
 
 class UpdateWorker(QtCore.QThread):
-    updatePOIs = QtCore.Signal(HumanPOI)
+    updatePOIs = QtCore.Signal(int)
     # Note that these are class attributes, not instance. There's no
     # reason to have several queues floating around... I think.
-    actions = Queue()
-    remote_actions = Queue()
+    local_pois = Queue()
+    remote_pois = Queue()
 
     def __init__(self, main_window):
         QtCore.QThread.__init__(self)
         self.mw = main_window
 
-        ###################################
-        fake_remote_actions = \
-            [0x0040085a, 0x0040085b, 0x0040085e,  # first three addrs in main(), first should have 12
-             0x00400750,  # not in first view, should error in add_inst_interest()
-             0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a,  # repeats of above
-             0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a,  # repeats of above
-             0x0040085a, 0x0040085b, 0x0040085e, 0x0040085e, 0x0040085e]  # repeats of above
-
-        for a in fake_remote_actions:
-            self.remote_actions.put(HumanPOIAddr(a))
-
-        ###################################
+        ######################### DEBUG #########################
+        remotes = _make_fake_remote_actions()
+        for r in remotes:
+            self.remote_pois.put(r)
+        #########################################################
 
     def run(self):
         # We need to get the POI plugin. If it's not there, it's because
@@ -114,47 +120,54 @@ class UpdateWorker(QtCore.QThread):
 
         while True:
             need_cg_update = False
-            need_fv_update = False
+
             # Get the current view (func graph vs linear)
             cg = self.mw.workspace.views_by_category['disassembly'][0].current_graph
 
+            new_poi = None
             # Get updates about other users
-            if not self.remote_actions.empty():
-                new_poi = self.remote_actions.get()
+            if not self.remote_pois.empty():
+                new_poi = self.remote_pois.get()
+            elif not self.local_pois.empty():
+                new_poi = self.local_pois.get()
 
-                print("Got update at addr {:#10x}".format(new_poi.addr))
-                add_poi_interest(new_poi.addr)
-                need_cg_update = cg.add_inst_interest(new_poi.addr)
-
-            # Send out updates on our user
-            if not self.actions.empty():
-                new_poi = self.actions.get()
-                if not isinstance(new_poi, HumanPOIFunc) and new_poi.addr:
-                    print("Sending update: {:#10x}".format(new_poi.addr))
-                    need_cg_update = cg.add_inst_interest(new_poi.addr)
-                    add_poi_interest(new_poi.addr)
-                elif isinstance(new_poi, HumanPOIFunc):
-                    print("Sending update: func {}".format(new_poi.func.name))
-                    add_poi_interest(new_poi.func.name)
+            if new_poi is not None:
+                if new_poi.loc_type == angr_comm_pb2.HumanPOI.FUNC_ADDR:
+                    func_name = self.mw.workspace.instance.cfg.functions[new_poi.code_location].name
+                    print("Sending update: func {}".format(func_name))
+                    add_poi_interest(func_name)
                     fv = self.mw.workspace.views_by_category['functions'][0]
                     fv.reload()
+                else:
+                    print("Sending update: {:#10x}".format(new_poi.code_location))
+                    need_cg_update = cg.add_inst_interest(new_poi.code_location)
+                    add_poi_interest(new_poi.code_location)
 
-                self.updatePOIs.emit(new_poi)
+                self.updatePOIs.emit(new_poi.code_location)
 
-            if need_cg_update:
-                cg.viewport().update()
+                if need_cg_update:
+                    cg.viewport().update()
 
-            time.sleep(0.5)
+            if new_poi is None:
+                time.sleep(1)
+            else:
+                time.sleep(0.1)
+
+def add_poi(addr, type='inst'):
+    msg = angr_comm_pb2.HumanPOI()
+    msg.tool = 'angr-management'
+    msg.timestamp = int(time.time())
+    msg.source = 'TEST_REMOTE_SOURCE'
+    msg.file = 'TEST_BINARY_NAME'  # testlib/test_preload
+    msg.code_location = addr
+    if type == 'inst':
+        msg.loc_type = angr_comm_pb2.HumanPOI.INST_ADDR
+    elif type == 'func':
+        msg.loc_type = angr_comm_pb2.HumanPOI.FUNC_ADDR
+
+    UpdateWorker.local_pois.put(msg)
 
 
-# Called throughout the UI to add a POI. The caller creates the POI object.
-def add_new_poi(poi):
-    if not isinstance(poi, HumanPOIFunc) and poi.addr:
-        print("New user POI @ {:#10x}".format(poi.addr))
-        UpdateWorker.actions.put(poi)
-    elif isinstance(poi, HumanPOIFunc):
-        print("New user POI @ {:#10x} (function '{}')".format(poi.addr, poi.func.name))
-        UpdateWorker.actions.put(poi)
-    else:
-        print("**NO ADDRESS** New user POI")  # Unsure how/if we'll use POIs without an address
+if __name__ == '__main__':
+    fake_remote_actions = _make_fake_remote_actions()
 

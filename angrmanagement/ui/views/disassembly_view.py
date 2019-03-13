@@ -300,7 +300,7 @@ class DisassemblyView(BaseView):
             #       just give 10 POIs for this addr if we rename it
             #
             for i in range(0,10):
-                poi.add_new_poi(poi.HumanPOIAddr(addr))
+                poi.add_poi(addr)
 
     def avoid_addr_in_exec(self, addr):
 
