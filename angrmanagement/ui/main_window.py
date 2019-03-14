@@ -1,11 +1,14 @@
 import pickle
 import os
 
-from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QMessageBox
+from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QMessageBox, QLabel
 from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import angr
+
+from angr.misc.bug_report import get_version
+
 
 from ..logic import GlobalInfo
 from ..data.instance import Instance
@@ -126,8 +129,20 @@ class MainWindow(QMainWindow):
     def open_doc_link(self):
         QDesktopServices.openUrl(QUrl("https://docs.angr.io/", QUrl.TolerantMode))
 
-    def open_about_dialog(self):
-        QMessageBox.about(self, "About angr", "Version 8")
+    def open_about_dialog(self, icon_location='angr.png'):
+        self.aboutDialog = QMessageBox()
+        self.aboutDialog.setIconPixmap(icon_location)
+        self.aboutDialog.setWindowTitle("about Angr")
+        self.aboutDialog.setText("about Angr")
+        #aboutDialog.setInformativeText(get_version())
+        #creditLabel = QLabel()
+        #creditLabel.setText("<a href=\"http://angr.io/\">Credits</a>")
+        #creditLabel.setTextFormat(Qt.RichText)
+        #creditLabel.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        #creditLabel.setOpenExternalLinks(True)
+        self.aboutDialog.show()
+        print("i'm here")
+        import pdb; pdb.set_trace()
     #
     # Widgets
     #
