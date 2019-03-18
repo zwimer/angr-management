@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='angr',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0f\x61ngr_comm.proto\x12\x04\x61ngr\"\xdf\x01\n\x08UserActy\x12\x0c\n\x04tool\x18\x01 \x01(\t\x12\x11\n\ttimestamp\x18\x02 \x01(\x03\x12\x0e\n\x06source\x18\x03 \x01(\t\x12\x0c\n\x04\x66ile\x18\x04 \x01(\t\x12\x15\n\rcode_location\x18\x05 \x01(\x03\x12(\n\x08loc_type\x18\x06 \x01(\x0e\x32\x16.angr.UserActy.LocType\"S\n\x07LocType\x12\n\n\x06SOURCE\x10\x00\x12\x10\n\x0cRAW_BIN_ADDR\x10\x01\x12\x0c\n\x08\x42LK_ADDR\x10\x02\x12\r\n\tFUNC_ADDR\x10\x03\x12\r\n\tINST_ADDR\x10\x04\"(\n\x08\x41\x63tyList\x12\x1c\n\x04pois\x18\x01 \x03(\x0b\x32\x0e.angr.UserActyb\x06proto3')
+  serialized_pb=_b('\n\x0f\x61ngr_comm.proto\x12\x04\x61ngr\"\xdf\x01\n\x08UserActy\x12\x0c\n\x04tool\x18\x01 \x01(\t\x12\x11\n\ttimestamp\x18\x02 \x01(\x03\x12\x0e\n\x06source\x18\x03 \x01(\t\x12\x0c\n\x04\x66ile\x18\x04 \x01(\t\x12\x15\n\rcode_location\x18\x05 \x01(\x03\x12(\n\x08loc_type\x18\x06 \x01(\x0e\x32\x16.angr.UserActy.LocType\"S\n\x07LocType\x12\n\n\x06SOURCE\x10\x00\x12\x10\n\x0cRAW_BIN_ADDR\x10\x01\x12\x0c\n\x08\x42LK_ADDR\x10\x02\x12\r\n\tFUNC_ADDR\x10\x03\x12\r\n\tINST_ADDR\x10\x04\"4\n\x07UserPOI\x12\x1c\n\x04\x61\x63ty\x18\x01 \x01(\x0b\x32\x0e.angr.UserActy\x12\x0b\n\x03tag\x18\x02 \x01(\t\"S\n\x08\x41\x63tyList\x12%\n\ruser_activity\x18\x01 \x03(\x0b\x32\x0e.angr.UserActy\x12 \n\tuser_pois\x18\x02 \x03(\x0b\x32\r.angr.UserPOIb\x06proto3')
 )
 
 
@@ -126,17 +126,24 @@ _USERACTY = _descriptor.Descriptor(
 )
 
 
-_ACTYLIST = _descriptor.Descriptor(
-  name='ActyList',
-  full_name='angr.ActyList',
+_USERPOI = _descriptor.Descriptor(
+  name='UserPOI',
+  full_name='angr.UserPOI',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='pois', full_name='angr.ActyList.pois', index=0,
-      number=1, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
+      name='acty', full_name='angr.UserPOI.acty', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='tag', full_name='angr.UserPOI.tag', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
@@ -153,13 +160,54 @@ _ACTYLIST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=251,
-  serialized_end=291,
+  serialized_end=303,
+)
+
+
+_ACTYLIST = _descriptor.Descriptor(
+  name='ActyList',
+  full_name='angr.ActyList',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='user_activity', full_name='angr.ActyList.user_activity', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='user_pois', full_name='angr.ActyList.user_pois', index=1,
+      number=2, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=305,
+  serialized_end=388,
 )
 
 _USERACTY.fields_by_name['loc_type'].enum_type = _USERACTY_LOCTYPE
 _USERACTY_LOCTYPE.containing_type = _USERACTY
-_ACTYLIST.fields_by_name['pois'].message_type = _USERACTY
+_USERPOI.fields_by_name['acty'].message_type = _USERACTY
+_ACTYLIST.fields_by_name['user_activity'].message_type = _USERACTY
+_ACTYLIST.fields_by_name['user_pois'].message_type = _USERPOI
 DESCRIPTOR.message_types_by_name['UserActy'] = _USERACTY
+DESCRIPTOR.message_types_by_name['UserPOI'] = _USERPOI
 DESCRIPTOR.message_types_by_name['ActyList'] = _ACTYLIST
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -169,6 +217,13 @@ UserActy = _reflection.GeneratedProtocolMessageType('UserActy', (_message.Messag
   # @@protoc_insertion_point(class_scope:angr.UserActy)
   ))
 _sym_db.RegisterMessage(UserActy)
+
+UserPOI = _reflection.GeneratedProtocolMessageType('UserPOI', (_message.Message,), dict(
+  DESCRIPTOR = _USERPOI,
+  __module__ = 'angr_comm_pb2'
+  # @@protoc_insertion_point(class_scope:angr.UserPOI)
+  ))
+_sym_db.RegisterMessage(UserPOI)
 
 ActyList = _reflection.GeneratedProtocolMessageType('ActyList', (_message.Message,), dict(
   DESCRIPTOR = _ACTYLIST,

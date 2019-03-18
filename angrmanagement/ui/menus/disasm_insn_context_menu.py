@@ -14,7 +14,9 @@ class DisasmInsnContextMenu(Menu):
             MenuEntry('T&oggle selection', self._toggle_instruction_selection),
             MenuSeparator(),
             MenuEntry('E&xecute symbolically...', self._popup_newstate_dialog),
-            MenuEntry('&Avoid in execution...', self._avoid_in_execution)
+            MenuEntry('&Avoid in execution...', self._avoid_in_execution),
+            MenuSeparator(),
+            MenuEntry('Tag &POI', self._tag_poi)
         ])
 
     @property
@@ -26,3 +28,9 @@ class DisasmInsnContextMenu(Menu):
     def _toggle_instruction_selection(self): self._disasm_view.toggle_instruction_selection(self.insn_addr)
 
     def _avoid_in_execution(self): self._disasm_view.avoid_addr_in_exec(self.insn_addr)
+
+    def _tag_poi(self):
+        from angrmanagement import poi
+        poi.add_user_poi(self.insn_addr, tag='generic')
+
+

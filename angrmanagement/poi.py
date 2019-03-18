@@ -111,11 +111,11 @@ class UpdateWorker(QtCore.QThread):
             else:
                 time.sleep(1) # wait a second for analysis to finish
 
-        def add_poi_interest(key):
+        def add_poi_interest(key, multiplier = 0):
             if key in pp:
-                pp[key] += 1
+                pp[key] += (1 * multiplier)
             else:
-                pp[key] = 1
+                pp[key] = (1 * multiplier)
 
         while True:
             need_cg_update = False
@@ -123,29 +123,35 @@ class UpdateWorker(QtCore.QThread):
             # Get the current view (func graph vs linear)
             cg = self.mw.workspace.views_by_category['disassembly'][0].current_graph
 
-            new_poi = None
+            new_msg = None
             # Handle our own updates before pulling in others'
             if not self.local_acty.empty():
-                new_poi = self.local_acty.get()
+                new_msg = self.local_acty.get()
             elif not self.remote_acty.empty():
-                new_poi = self.remote_acty.get()
+                new_msg = self.remote_acty.get()
 
-            if new_poi is None:
+            if new_msg is None:
                 time.sleep(1)
                 continue
 
-            if new_poi.loc_type == angr_comm_pb2.UserActy.FUNC_ADDR:
-                func_name = self.mw.workspace.instance.cfg.functions[new_poi.code_location].name
-                print("Sending update: func {}".format(func_name))
-                add_poi_interest(func_name)
-                fv = self.mw.workspace.views_by_category['functions'][0]
-                fv.reload()
-            else:
-                print("Sending update: {:#10x}".format(new_poi.code_location))
-                need_cg_update = cg.add_inst_interest(new_poi.code_location)
-                add_poi_interest(new_poi.code_location)
+            if isinstance(new_msg, angr_comm_pb2.UserActy):
+                if new_msg.loc_type == angr_comm_pb2.UserActy.FUNC_ADDR:
+                    func_name = self.mw.workspace.instance.cfg.functions[new_msg.code_location].name
+                    print("Sending update: func {}".format(func_name))
+                    add_poi_interest(func_name)
+                    fv = self.mw.workspace.views_by_category['functions'][0]
+                    fv.reload()
+                else:
+                    print("Sending update: {:#10x}".format(new_msg.code_location))
+                    need_cg_update = cg.add_inst_interest(new_msg.code_location)
+                    add_poi_interest(new_msg.code_location)
 
-            self.updatePOIs.emit(new_poi.code_location)
+                self.updatePOIs.emit(new_msg.code_location)
+            elif isinstance(new_msg, angr_comm_pb2.UserPOI):
+                print("Tagging POI (tag='{}') @ {:#10x}".format(new_msg.tag, new_msg.acty.code_location))
+                need_cg_update = cg.add_inst_interest(new_msg.acty.code_location)
+                add_poi_interest(new_msg.acty.code_location, 10)
+                self.updatePOIs.emit(new_msg.acty.code_location)
 
             if need_cg_update:
                 cg.viewport().update()
@@ -167,7 +173,21 @@ def track_user_acty(addr, type='inst'):
 
     UpdateWorker.local_acty.put(msg)
 
+def add_user_poi(addr, type='inst', tag=''):
+    msg = angr_comm_pb2.UserPOI()
+    msg.tag = tag
 
+    msg.acty.tool = 'angr-management'
+    msg.acty.timestamp = int(time.time())
+    msg.acty.source = 'TEST_REMOTE_SOURCE'
+    msg.acty.file = 'TEST_BINARY_NAME'  # testlib/test_preload
+    msg.acty.code_location = addr
+    if type == 'inst':
+        msg.acty.loc_type = angr_comm_pb2.UserActy.INST_ADDR
+    elif type == 'func':
+        msg.acty.loc_type = angr_comm_pb2.UserActy.FUNC_ADDR
+
+    UpdateWorker.local_acty.put(msg)
 
 
 if __name__ == '__main__':

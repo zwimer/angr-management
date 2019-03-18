@@ -1,11 +1,22 @@
 syntax = "proto3";
 package angr;
 
-/* TODO (discuss):
- *  track POI source (user/machine/tool w/ IP, etc)
- *  message CodeRef (file, addr/line, etc)
- * 
+/* TODO: Abstract out: project, user, source, etc.
+ *  Meta can be 'header' for all messages
  */
+
+//message Project {
+//    string name = 1;    // user-provided
+//    int64 uid = 2;      // uniquely identify the project
+//    string tool = 3;    // the source tool (e.g., "angr-management")
+//    int64 timestamp = 4; // see: https://stackoverflow.com/questions/3574716/date-and-time-type-for-use-with-protobuf
+//}
+//
+//message User {
+//    string identifier = 1; // username? IP? MAC?
+//}
+
+
 
 message UserActy {
     string tool = 1;    // the source tool (e.g., "angr-management")
@@ -26,10 +37,16 @@ message UserActy {
     LocType loc_type = 6;
 }
 
+message UserPOI {
+    UserActy acty = 1;
+    string tag = 2;         // categories, etc
+}
+
 /*
  * Grouping collections of
  */
 message ActyList {
     repeated UserActy user_activity = 1;
+    repeated UserPOI user_pois = 2;
 }
 
