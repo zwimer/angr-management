@@ -181,12 +181,13 @@ class QInstruction(QGraphObject):
             self._width += self.GRAPH_STRING_SPACING + self._string_width
 
     def _paint_interest(self, painter):
+        # TODO: Use threshold before highlighting
         if self.interest:
+            multiplier = 6 # HACK: must be larger with fewer people to make it more obvious
             # starting at a light green (0xd6ffdb) to dark green (0x003d13)
-
-            r = max(0xd6 - 2 * self.interest, 0)
+            r = max(0xd6 - self.interest * multiplier, 0)
             g = max(0xff - self.interest, 0x3d)
-            b = max(0xd6 - 2 * self.interest, 0x13)
+            b = max(0xd6 - self.interest * multiplier, 0x13)
             interest_color = QColor(r, g, b)
             painter.setPen(interest_color)
             painter.setBrush(interest_color)
