@@ -24,7 +24,7 @@ def do_srv_loop():
             srv_socket.send('all my pois')
         elif msg[0:3] == b'set':
             print("Got new POIs")
-            poi_list = angr_comm_pb2.POIList()
+            poi_list = angr_comm_pb2.ActyList()
             poi_list.ParseFromString(msg[3:])
             for poi in poi_list.pois:
                 src = None
@@ -49,15 +49,15 @@ sub_socket.connect("tcp://{}:{}".format(srv_ip, srv_port))
 
 def do_clt_loop(user):
     def get_local_pois():
-        poi_msg = angr_comm_pb2.POIList()
+        poi_msg = angr_comm_pb2.ActyList()
         for addr in [0x0040085a, 0x0040085a, 0x0040085a]:
-            msg = poi_msg.pois.add()
+            msg = poi_msg.user_activity.add()
             msg.tool = 'angr-management'
             msg.timestamp = int(time.time())
             msg.source = 'user{}'.format(user)
             msg.file = 'TEST_BINARY_NAME'  # testlib/test_preload
             msg.code_location = addr
-            msg.loc_type = angr_comm_pb2.HumanPOI.INST_ADDR
+            msg.loc_type = angr_comm_pb2.UserActy.INST_ADDR
         return poi_msg
 
     pm = get_local_pois()
@@ -82,13 +82,13 @@ print("Server has POIs from {} users".format(len(all_pois)))
 #######################################################################################################################
 
 def test_pub_sub():
-    msg = angr_comm_pb2.HumanPOI()
+    msg = angr_comm_pb2.UserActy()
     msg.tool = 'angr-management'
     msg.timestamp = int(time.time())
     msg.source = 'TEST_REMOTE_SOURCE'
     msg.file = 'TEST_BINARY_NAME'  # testlib/test_preload
     msg.code_location = 0x0040085a
-    msg.loc_type = angr_comm_pb2.HumanPOI.INST_ADDR
+    msg.loc_type = angr_comm_pb2.UserActy.INST_ADDR
 
     import zmq
     topic_poi = b'poi'
@@ -115,6 +115,6 @@ def test_pub_sub():
         topic_and_data = sub_socket.recv()
         topic, data = topic_and_data.split(b' ', 1)
         if topic == topic_poi:
-            msg = angr_comm_pb2.HumanPOI()
+            msg = angr_comm_pb2.UserActy()
             msg.ParseFromString(data)
             print("Got new message: {}".format(msg))

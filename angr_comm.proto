@@ -7,7 +7,7 @@ package angr;
  * 
  */
 
-message HumanPOI {
+message UserActy {
     string tool = 1;    // the source tool (e.g., "angr-management")
     int64 timestamp = 2; // see: https://stackoverflow.com/questions/3574716/date-and-time-type-for-use-with-protobuf
     string source = 3; // IP, username, hostname, etc
@@ -26,7 +26,10 @@ message HumanPOI {
     LocType loc_type = 6;
 }
 
-message POIList {
-    repeated HumanPOI pois = 1;
+/*
+ * Grouping collections of
+ */
+message ActyList {
+    repeated UserActy user_activity = 1;
 }
 

@@ -19,14 +19,14 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='angr',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0f\x61ngr_comm.proto\x12\x04\x61ngr\"\xdf\x01\n\x08HumanPOI\x12\x0c\n\x04tool\x18\x01 \x01(\t\x12\x11\n\ttimestamp\x18\x02 \x01(\x03\x12\x0e\n\x06source\x18\x03 \x01(\t\x12\x0c\n\x04\x66ile\x18\x04 \x01(\t\x12\x15\n\rcode_location\x18\x05 \x01(\x03\x12(\n\x08loc_type\x18\x06 \x01(\x0e\x32\x16.angr.HumanPOI.LocType\"S\n\x07LocType\x12\n\n\x06SOURCE\x10\x00\x12\x10\n\x0cRAW_BIN_ADDR\x10\x01\x12\x0c\n\x08\x42LK_ADDR\x10\x02\x12\r\n\tFUNC_ADDR\x10\x03\x12\r\n\tINST_ADDR\x10\x04\"\'\n\x07POIList\x12\x1c\n\x04pois\x18\x01 \x03(\x0b\x32\x0e.angr.HumanPOIb\x06proto3')
+  serialized_pb=_b('\n\x0f\x61ngr_comm.proto\x12\x04\x61ngr\"\xdf\x01\n\x08UserActy\x12\x0c\n\x04tool\x18\x01 \x01(\t\x12\x11\n\ttimestamp\x18\x02 \x01(\x03\x12\x0e\n\x06source\x18\x03 \x01(\t\x12\x0c\n\x04\x66ile\x18\x04 \x01(\t\x12\x15\n\rcode_location\x18\x05 \x01(\x03\x12(\n\x08loc_type\x18\x06 \x01(\x0e\x32\x16.angr.UserActy.LocType\"S\n\x07LocType\x12\n\n\x06SOURCE\x10\x00\x12\x10\n\x0cRAW_BIN_ADDR\x10\x01\x12\x0c\n\x08\x42LK_ADDR\x10\x02\x12\r\n\tFUNC_ADDR\x10\x03\x12\r\n\tINST_ADDR\x10\x04\"(\n\x08\x41\x63tyList\x12\x1c\n\x04pois\x18\x01 \x03(\x0b\x32\x0e.angr.UserActyb\x06proto3')
 )
 
 
 
-_HUMANPOI_LOCTYPE = _descriptor.EnumDescriptor(
+_USERACTY_LOCTYPE = _descriptor.EnumDescriptor(
   name='LocType',
-  full_name='angr.HumanPOI.LocType',
+  full_name='angr.UserActy.LocType',
   filename=None,
   file=DESCRIPTOR,
   values=[
@@ -56,53 +56,53 @@ _HUMANPOI_LOCTYPE = _descriptor.EnumDescriptor(
   serialized_start=166,
   serialized_end=249,
 )
-_sym_db.RegisterEnumDescriptor(_HUMANPOI_LOCTYPE)
+_sym_db.RegisterEnumDescriptor(_USERACTY_LOCTYPE)
 
 
-_HUMANPOI = _descriptor.Descriptor(
-  name='HumanPOI',
-  full_name='angr.HumanPOI',
+_USERACTY = _descriptor.Descriptor(
+  name='UserActy',
+  full_name='angr.UserActy',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='tool', full_name='angr.HumanPOI.tool', index=0,
+      name='tool', full_name='angr.UserActy.tool', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='timestamp', full_name='angr.HumanPOI.timestamp', index=1,
+      name='timestamp', full_name='angr.UserActy.timestamp', index=1,
       number=2, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='source', full_name='angr.HumanPOI.source', index=2,
+      name='source', full_name='angr.UserActy.source', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='file', full_name='angr.HumanPOI.file', index=3,
+      name='file', full_name='angr.UserActy.file', index=3,
       number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='code_location', full_name='angr.HumanPOI.code_location', index=4,
+      name='code_location', full_name='angr.UserActy.code_location', index=4,
       number=5, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='loc_type', full_name='angr.HumanPOI.loc_type', index=5,
+      name='loc_type', full_name='angr.UserActy.loc_type', index=5,
       number=6, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -113,7 +113,7 @@ _HUMANPOI = _descriptor.Descriptor(
   ],
   nested_types=[],
   enum_types=[
-    _HUMANPOI_LOCTYPE,
+    _USERACTY_LOCTYPE,
   ],
   serialized_options=None,
   is_extendable=False,
@@ -126,15 +126,15 @@ _HUMANPOI = _descriptor.Descriptor(
 )
 
 
-_POILIST = _descriptor.Descriptor(
-  name='POIList',
-  full_name='angr.POIList',
+_ACTYLIST = _descriptor.Descriptor(
+  name='ActyList',
+  full_name='angr.ActyList',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='pois', full_name='angr.POIList.pois', index=0,
+      name='pois', full_name='angr.ActyList.pois', index=0,
       number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -153,29 +153,29 @@ _POILIST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=251,
-  serialized_end=290,
+  serialized_end=291,
 )
 
-_HUMANPOI.fields_by_name['loc_type'].enum_type = _HUMANPOI_LOCTYPE
-_HUMANPOI_LOCTYPE.containing_type = _HUMANPOI
-_POILIST.fields_by_name['pois'].message_type = _HUMANPOI
-DESCRIPTOR.message_types_by_name['HumanPOI'] = _HUMANPOI
-DESCRIPTOR.message_types_by_name['POIList'] = _POILIST
+_USERACTY.fields_by_name['loc_type'].enum_type = _USERACTY_LOCTYPE
+_USERACTY_LOCTYPE.containing_type = _USERACTY
+_ACTYLIST.fields_by_name['pois'].message_type = _USERACTY
+DESCRIPTOR.message_types_by_name['UserActy'] = _USERACTY
+DESCRIPTOR.message_types_by_name['ActyList'] = _ACTYLIST
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-HumanPOI = _reflection.GeneratedProtocolMessageType('HumanPOI', (_message.Message,), dict(
-  DESCRIPTOR = _HUMANPOI,
+UserActy = _reflection.GeneratedProtocolMessageType('UserActy', (_message.Message,), dict(
+  DESCRIPTOR = _USERACTY,
   __module__ = 'angr_comm_pb2'
-  # @@protoc_insertion_point(class_scope:angr.HumanPOI)
+  # @@protoc_insertion_point(class_scope:angr.UserActy)
   ))
-_sym_db.RegisterMessage(HumanPOI)
+_sym_db.RegisterMessage(UserActy)
 
-POIList = _reflection.GeneratedProtocolMessageType('POIList', (_message.Message,), dict(
-  DESCRIPTOR = _POILIST,
+ActyList = _reflection.GeneratedProtocolMessageType('ActyList', (_message.Message,), dict(
+  DESCRIPTOR = _ACTYLIST,
   __module__ = 'angr_comm_pb2'
-  # @@protoc_insertion_point(class_scope:angr.POIList)
+  # @@protoc_insertion_point(class_scope:angr.ActyList)
   ))
-_sym_db.RegisterMessage(POIList)
+_sym_db.RegisterMessage(ActyList)
 
 
 # @@protoc_insertion_point(module_scope)

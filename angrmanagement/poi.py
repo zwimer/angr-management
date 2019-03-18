@@ -62,23 +62,23 @@ def _make_fake_remote_actions():
          0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a,  # repeats of above
          0x0040085a, 0x0040085b, 0x0040085e, 0x0040085e, 0x0040085e]  # repeats of above
     for addr in addrs:
-        msg = angr_comm_pb2.HumanPOI()
+        msg = angr_comm_pb2.UserActy()
         msg.tool = 'angr-management'
         msg.timestamp = int(time.time())
         msg.source = 'TEST_REMOTE_SOURCE'
         msg.file = 'TEST_BINARY_NAME' # testlib/test_preload
         msg.code_location = addr
-        msg.loc_type = angr_comm_pb2.HumanPOI.INST_ADDR
+        msg.loc_type = angr_comm_pb2.UserActy.INST_ADDR
         fake_actions.append(msg)
 
     # main function
-    msg = angr_comm_pb2.HumanPOI()
+    msg = angr_comm_pb2.UserActy()
     msg.tool = 'angr-management'
     msg.timestamp = int(time.time())
     msg.source = 'TEST_REMOTE_SOURCE'
     msg.file = 'TEST_BINARY_NAME'   # testlib/test_preload
     msg.code_location = 0x0040085a
-    msg.loc_type = angr_comm_pb2.HumanPOI.FUNC_ADDR
+    msg.loc_type = angr_comm_pb2.UserActy.FUNC_ADDR
     fake_actions.append(msg)
     return fake_actions
 #########################################################
@@ -134,7 +134,7 @@ class UpdateWorker(QtCore.QThread):
                 time.sleep(1)
                 continue
 
-            if new_poi.loc_type == angr_comm_pb2.HumanPOI.FUNC_ADDR:
+            if new_poi.loc_type == angr_comm_pb2.UserActy.FUNC_ADDR:
                 func_name = self.mw.workspace.instance.cfg.functions[new_poi.code_location].name
                 print("Sending update: func {}".format(func_name))
                 add_poi_interest(func_name)
@@ -154,16 +154,16 @@ class UpdateWorker(QtCore.QThread):
 
 
 def add_poi(addr, type='inst'):
-    msg = angr_comm_pb2.HumanPOI()
+    msg = angr_comm_pb2.UserActy()
     msg.tool = 'angr-management'
     msg.timestamp = int(time.time())
     msg.source = 'TEST_REMOTE_SOURCE'
     msg.file = 'TEST_BINARY_NAME'  # testlib/test_preload
     msg.code_location = addr
     if type == 'inst':
-        msg.loc_type = angr_comm_pb2.HumanPOI.INST_ADDR
+        msg.loc_type = angr_comm_pb2.UserActy.INST_ADDR
     elif type == 'func':
-        msg.loc_type = angr_comm_pb2.HumanPOI.FUNC_ADDR
+        msg.loc_type = angr_comm_pb2.UserActy.FUNC_ADDR
 
     UpdateWorker.local_pois.put(msg)
 
