@@ -1,7 +1,6 @@
 from PySide2 import QtCore
 from queue import Queue
 import time
-import socket
 import angr_comm_pb2
 
 #########################################################
@@ -125,33 +124,33 @@ class UpdateWorker(QtCore.QThread):
             cg = self.mw.workspace.views_by_category['disassembly'][0].current_graph
 
             new_poi = None
-            # Get updates about other users
-            if not self.remote_pois.empty():
-                new_poi = self.remote_pois.get()
-            elif not self.local_pois.empty():
+            # Handle our own updates before pulling in others'
+            if not self.local_pois.empty():
                 new_poi = self.local_pois.get()
-
-            if new_poi is not None:
-                if new_poi.loc_type == angr_comm_pb2.HumanPOI.FUNC_ADDR:
-                    func_name = self.mw.workspace.instance.cfg.functions[new_poi.code_location].name
-                    print("Sending update: func {}".format(func_name))
-                    add_poi_interest(func_name)
-                    fv = self.mw.workspace.views_by_category['functions'][0]
-                    fv.reload()
-                else:
-                    print("Sending update: {:#10x}".format(new_poi.code_location))
-                    need_cg_update = cg.add_inst_interest(new_poi.code_location)
-                    add_poi_interest(new_poi.code_location)
-
-                self.updatePOIs.emit(new_poi.code_location)
-
-                if need_cg_update:
-                    cg.viewport().update()
+            elif not self.remote_pois.empty():
+                new_poi = self.remote_pois.get()
 
             if new_poi is None:
                 time.sleep(1)
+                continue
+
+            if new_poi.loc_type == angr_comm_pb2.HumanPOI.FUNC_ADDR:
+                func_name = self.mw.workspace.instance.cfg.functions[new_poi.code_location].name
+                print("Sending update: func {}".format(func_name))
+                add_poi_interest(func_name)
+                fv = self.mw.workspace.views_by_category['functions'][0]
+                fv.reload()
             else:
-                time.sleep(0.1)
+                print("Sending update: {:#10x}".format(new_poi.code_location))
+                need_cg_update = cg.add_inst_interest(new_poi.code_location)
+                add_poi_interest(new_poi.code_location)
+
+            self.updatePOIs.emit(new_poi.code_location)
+
+            if need_cg_update:
+                cg.viewport().update()
+
+            time.sleep(0.5)
 
 
 def add_poi(addr, type='inst'):
@@ -169,39 +168,9 @@ def add_poi(addr, type='inst'):
     UpdateWorker.local_pois.put(msg)
 
 
-def test_pub_sub():
-    msg = angr_comm_pb2.HumanPOI()
-    msg.tool = 'angr-management'
-    msg.timestamp = int(time.time())
-    msg.source = 'TEST_REMOTE_SOURCE'
-    msg.file = 'TEST_BINARY_NAME'  # testlib/test_preload
-    msg.code_location = 0x0040085a
-    msg.loc_type = angr_comm_pb2.HumanPOI.INST_ADDR
 
-    import zmq
-    topic = b'poi'
-    pub_port = 44444
-    pub_context = zmq.Context()
-    pub_socket = pub_context.socket(zmq.PUB)
-    pub_socket.bind("tcp://*:%s" % pub_port)
-    time.sleep(1)
-    sub_context = zmq.Context()
-    sub_socket = sub_context.socket(zmq.SUB)
-    sub_socket.connect("tcp://127.0.0.1:{}".format(pub_port))
-    sub_socket.setsockopt(zmq.SUBSCRIBE, topic)
-    time.sleep(3)
-    while True:
-        pub_socket.send(topic + b' ' + msg.SerializeToString())
-        time.sleep(1)
-        topic_and_data = sub_socket.recv()
-        data = topic_and_data.split(b' ', 1)[1]
-
-        msg = angr_comm_pb2.HumanPOI()
-        msg.ParseFromString(data)
-        print(msg)
-        return
 
 
 if __name__ == '__main__':
-    #fake_remote_actions = _make_fake_remote_actions()
-    test_pub_sub()
+    fake_remote_actions = _make_fake_remote_actions()
+
