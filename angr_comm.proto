@@ -25,3 +25,8 @@ message HumanPOI {
 
     LocType loc_type = 6;
 }
+
+message POIList {
+    repeated HumanPOI pois = 1;
+}
+

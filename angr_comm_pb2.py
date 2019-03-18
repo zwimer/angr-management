@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='angr',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0f\x61ngr_comm.proto\x12\x04\x61ngr\"\xdf\x01\n\x08HumanPOI\x12\x0c\n\x04tool\x18\x01 \x01(\t\x12\x11\n\ttimestamp\x18\x02 \x01(\x03\x12\x0e\n\x06source\x18\x03 \x01(\t\x12\x0c\n\x04\x66ile\x18\x04 \x01(\t\x12\x15\n\rcode_location\x18\x05 \x01(\x03\x12(\n\x08loc_type\x18\x06 \x01(\x0e\x32\x16.angr.HumanPOI.LocType\"S\n\x07LocType\x12\n\n\x06SOURCE\x10\x00\x12\x10\n\x0cRAW_BIN_ADDR\x10\x01\x12\x0c\n\x08\x42LK_ADDR\x10\x02\x12\r\n\tFUNC_ADDR\x10\x03\x12\r\n\tINST_ADDR\x10\x04\x62\x06proto3')
+  serialized_pb=_b('\n\x0f\x61ngr_comm.proto\x12\x04\x61ngr\"\xdf\x01\n\x08HumanPOI\x12\x0c\n\x04tool\x18\x01 \x01(\t\x12\x11\n\ttimestamp\x18\x02 \x01(\x03\x12\x0e\n\x06source\x18\x03 \x01(\t\x12\x0c\n\x04\x66ile\x18\x04 \x01(\t\x12\x15\n\rcode_location\x18\x05 \x01(\x03\x12(\n\x08loc_type\x18\x06 \x01(\x0e\x32\x16.angr.HumanPOI.LocType\"S\n\x07LocType\x12\n\n\x06SOURCE\x10\x00\x12\x10\n\x0cRAW_BIN_ADDR\x10\x01\x12\x0c\n\x08\x42LK_ADDR\x10\x02\x12\r\n\tFUNC_ADDR\x10\x03\x12\r\n\tINST_ADDR\x10\x04\"\'\n\x07POIList\x12\x1c\n\x04pois\x18\x01 \x03(\x0b\x32\x0e.angr.HumanPOIb\x06proto3')
 )
 
 
@@ -125,9 +125,42 @@ _HUMANPOI = _descriptor.Descriptor(
   serialized_end=249,
 )
 
+
+_POILIST = _descriptor.Descriptor(
+  name='POIList',
+  full_name='angr.POIList',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='pois', full_name='angr.POIList.pois', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=251,
+  serialized_end=290,
+)
+
 _HUMANPOI.fields_by_name['loc_type'].enum_type = _HUMANPOI_LOCTYPE
 _HUMANPOI_LOCTYPE.containing_type = _HUMANPOI
+_POILIST.fields_by_name['pois'].message_type = _HUMANPOI
 DESCRIPTOR.message_types_by_name['HumanPOI'] = _HUMANPOI
+DESCRIPTOR.message_types_by_name['POIList'] = _POILIST
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 HumanPOI = _reflection.GeneratedProtocolMessageType('HumanPOI', (_message.Message,), dict(
@@ -136,6 +169,13 @@ HumanPOI = _reflection.GeneratedProtocolMessageType('HumanPOI', (_message.Messag
   # @@protoc_insertion_point(class_scope:angr.HumanPOI)
   ))
 _sym_db.RegisterMessage(HumanPOI)
+
+POIList = _reflection.GeneratedProtocolMessageType('POIList', (_message.Message,), dict(
+  DESCRIPTOR = _POILIST,
+  __module__ = 'angr_comm_pb2'
+  # @@protoc_insertion_point(class_scope:angr.POIList)
+  ))
+_sym_db.RegisterMessage(POIList)
 
 
 # @@protoc_insertion_point(module_scope)
