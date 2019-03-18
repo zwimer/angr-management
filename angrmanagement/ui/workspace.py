@@ -62,7 +62,7 @@ class Workspace:
     #
 
     def on_function_selected(self, function):
-        poi.add_poi(function.addr, type='func')
+        poi.track_user_acty(function.addr, type='func')
         self.views_by_category['disassembly'][0].display_function(function)
 
     def on_cfg_generated(self):

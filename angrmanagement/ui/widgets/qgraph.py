@@ -159,7 +159,7 @@ class QBaseGraph(QZoomingGraphicsView):
 
             block.addr_to_insns[insn_addr].select()
 
-        poi.add_poi(insn_addr)
+        poi.track_user_acty(insn_addr)
         self.viewport().update()
 
     def unselect_instruction(self, insn_addr):

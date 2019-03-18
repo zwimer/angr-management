@@ -87,8 +87,8 @@ class UpdateWorker(QtCore.QThread):
     updatePOIs = QtCore.Signal(int)
     # Note that these are class attributes, not instance. There's no
     # reason to have several queues floating around... I think.
-    local_pois = Queue()
-    remote_pois = Queue()
+    local_acty = Queue()
+    remote_acty = Queue()
 
     def __init__(self, main_window):
         QtCore.QThread.__init__(self)
@@ -97,7 +97,7 @@ class UpdateWorker(QtCore.QThread):
         ######################### DEBUG #########################
         remotes = _make_fake_remote_actions()
         for r in remotes:
-            self.remote_pois.put(r)
+            self.remote_acty.put(r)
         #########################################################
 
     def run(self):
@@ -125,10 +125,10 @@ class UpdateWorker(QtCore.QThread):
 
             new_poi = None
             # Handle our own updates before pulling in others'
-            if not self.local_pois.empty():
-                new_poi = self.local_pois.get()
-            elif not self.remote_pois.empty():
-                new_poi = self.remote_pois.get()
+            if not self.local_acty.empty():
+                new_poi = self.local_acty.get()
+            elif not self.remote_acty.empty():
+                new_poi = self.remote_acty.get()
 
             if new_poi is None:
                 time.sleep(1)
@@ -153,7 +153,7 @@ class UpdateWorker(QtCore.QThread):
             time.sleep(0.5)
 
 
-def add_poi(addr, type='inst'):
+def track_user_acty(addr, type='inst'):
     msg = angr_comm_pb2.UserActy()
     msg.tool = 'angr-management'
     msg.timestamp = int(time.time())
@@ -165,8 +165,7 @@ def add_poi(addr, type='inst'):
     elif type == 'func':
         msg.loc_type = angr_comm_pb2.UserActy.FUNC_ADDR
 
-    UpdateWorker.local_pois.put(msg)
-
+    UpdateWorker.local_acty.put(msg)
 
 
 

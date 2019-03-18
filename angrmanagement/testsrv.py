@@ -6,7 +6,7 @@ import time
 
 ##### SERVER #####
 
-topic_poi = b'poi'
+topic_acty = b'acty'
 topic_sync = b'sync'
 srv_port = 40001
 pub_context = zmq.Context()
