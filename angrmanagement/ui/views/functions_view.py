@@ -10,10 +10,22 @@ class FunctionsView(BaseView):
         super(FunctionsView, self).__init__('functions', workspace, default_docking_position, *args, **kwargs)
 
         self.caption = 'Functions'
-        self._function_table = None
+        self._function_table = None  # type:QFunctionTable
         self._status_label = None
 
+        self._backcolor_callback = None
         self._init_widgets()
+
+    @property
+    def backcolor_callback(self):
+        if self._function_table:
+            return self._function_table.backcolor_callback
+
+    @backcolor_callback.setter
+    def backcolor_callback(self, v):
+        self._backcolor_callback = v
+        if self._function_table:
+            self._function_table.backcolor_callback = v
 
     def set_function_count(self, count):
         if self._status_label is not None:
@@ -38,6 +50,8 @@ class FunctionsView(BaseView):
     def _init_widgets(self):
 
         self._function_table = QFunctionTable(self, selection_callback=self._on_function_selected)
+        self._function_table.backcolor_callback = self.backcolor_callback
+
         self._status_label = QLabel()
 
         vlayout = QVBoxLayout()

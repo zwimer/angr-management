@@ -26,6 +26,8 @@ class QFunctionTableModel(QAbstractTableModel):
         self._func_list = None
         self._raw_func_list = func_list
         self._poi_plugin = poi_plugin
+        self._backcolor_callback = None
+
 
     def __len__(self):
         if self._func_list is not None:
@@ -45,6 +47,15 @@ class QFunctionTableModel(QAbstractTableModel):
         self._func_list = None
         self._raw_func_list = v
         self.emit(SIGNAL("layoutChanged()"))
+
+    @property
+    def backcolor_callback(self):
+        return self._backcolor_callback
+
+    @backcolor_callback.setter
+    def backcolor_callback(self, v):
+        self._backcolor_callback = v
+        # self.emit(SIGNAL("layoutChanged()"))
 
     @property
     def poi_plugin(self):
@@ -138,16 +149,9 @@ class QFunctionTableModel(QAbstractTableModel):
 
         elif role == Qt.BackgroundColorRole:
             color = QColor(0xff, 0xff, 0xff)
-            if func.binary._entry is not None and func.addr == func.binary.entry:
-                color = QColor(0xe5, 0xfb, 0xff)
-            elif self.poi_plugin:
-                interest = self.poi_plugin.get_interest(func.name)
-                interest += self.poi_plugin.get_cumulative_tag_vals(func.name)
-                if interest:
-                    r = max(0xd6 - 2 * interest, 0)
-                    g = max(0xff - interest, 0x3d)
-                    b = max(0xd6 - 2 * interest, 0x13)
-                    color = QColor(r, g, b)
+            if self.backcolor_callback is not None:
+                r, g, b = self.backcolor_callback(func)
+                color = QColor(r, g, b)
 
             return QBrush(color)
 
@@ -248,6 +252,18 @@ class QFunctionTableView(QTableView):
         if self._model:
             self._model.poi_plugin = v
 
+    @property
+    def backcolor_callback(self):
+        if self._model:
+            return self._model.backcolor_callback
+        else:
+            return None
+
+    @backcolor_callback.setter
+    def backcolor_callback(self, v):
+        if self._model:
+            self._model.backcolor_callback = v
+
     def filter(self, keyword):
         self._model.filter(keyword)
 
@@ -321,6 +337,18 @@ class QFunctionTable(QWidget):
             self._table_view.function_manager = v
         else:
             raise ValueError("QFunctionTableView is uninitialized.")
+
+    @property
+    def backcolor_callback(self):
+        ret = None
+        if self._table_view:
+            ret = self._table_view.backcolor_callback
+        return ret
+
+    @backcolor_callback.setter
+    def backcolor_callback(self, v):
+        if self._table_view:
+            self._table_view.backcolor_callback = v
 
     @property
     def poi_plugin(self):

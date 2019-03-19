@@ -89,6 +89,11 @@ class Workspace:
     # Public methods
     #
 
+    def set_function_backcolor_callback(self, callback):
+        fv = self.views_by_category['functions'][0]
+        if fv:
+            fv.backcolor_callback = callback
+
     def add_view(self, view, caption, category):
 
         docking_positions = {

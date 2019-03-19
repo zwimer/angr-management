@@ -35,7 +35,7 @@ class AddrData:
         A tag is a hashable type, usually a string, and its value is
         how many times that tag has been set.
         """
-        if tag not in self._tags:
+        if tag not in self.tags:
             self._tags[tag] = addend
         else:
             self._tags[tag] += addend
@@ -164,6 +164,27 @@ def _write_actions(actions):
 
 #########################################################
 
+poi_plugin = None
+
+
+def get_function_backcolor_rgb(func):
+    if func.name is None or func.name is '':
+        return 255, 255, 255
+
+    # HACK for a bug. Should just use `entry`
+    if func.binary._entry is not None and func.addr == func.binary.entry:
+        return 0xe5, 0xfb, 0xff     # light blue
+    elif poi_plugin:
+        interest = poi_plugin.get_interest(func.name)
+        interest += poi_plugin.get_cumulative_tag_vals(func.name)
+        if interest:
+            r = max(0xd6 - 2 * interest, 0)
+            g = max(0xff - interest, 0x3d)
+            b = max(0xd6 - 2 * interest, 0x13)
+            return r, g, b
+
+    return 255, 255, 255
+
 class UpdateWorker(QtCore.QThread):
     updatePOIs = QtCore.Signal((int,), (str,))
 
@@ -186,26 +207,29 @@ class UpdateWorker(QtCore.QThread):
         # We need to get the POI plugin. If it's not there, it's because
         # the user hasn't loaded a binary or the project hasn't done its
         # analysis yet.
-        pp = None
-        while pp is None:
+        global poi_plugin
+
+        while poi_plugin is None:
             if self.mw.workspace.instance.cfg is not None:
-                pp = self.mw.workspace.instance.cfg.kb.get_plugin('pois')
+                poi_plugin = self.mw.workspace.instance.cfg.kb.get_plugin('pois')
+                self.mw.workspace.set_function_backcolor_callback(get_function_backcolor_rgb)
             else:
                 time.sleep(1)  # wait a second for analysis to finish
+
 
         def get_green_rgb_from_interest(pp_key):
             multiplier = 6  # HACK: must be larger with fewer people to make it more obvious
             # starting at a light green (0xd6ffdb) to dark green (0x003d13)
-            r = max(0xd6 - pp.get_interest(pp_key) * multiplier, 0)
-            g = max(0xff - pp.get_interest(pp_key), 0x3d)
-            b = max(0xd6 - pp.get_interest(pp_key) * multiplier, 0x13)
+            r = max(0xd6 - poi_plugin.get_interest(pp_key) * multiplier, 0)
+            g = max(0xff - poi_plugin.get_interest(pp_key), 0x3d)
+            b = max(0xd6 - poi_plugin.get_interest(pp_key) * multiplier, 0x13)
             return r, g, b
 
         def get_blue_rgb_from_tags(pp_key):
             multiplier = 6  # HACK: must be larger with fewer people to make it more obvious
-            r = max(0xd6 - pp.get_cumulative_tag_vals(pp_key) * multiplier, 0)
-            g = max(0xd6 - pp.get_cumulative_tag_vals(pp_key) * multiplier, 0x13)
-            b = max(0xff - pp.get_cumulative_tag_vals(pp_key), 0x3d)
+            r = max(0xd6 - poi_plugin.get_cumulative_tag_vals(pp_key) * multiplier, 0)
+            g = max(0xd6 - poi_plugin.get_cumulative_tag_vals(pp_key) * multiplier, 0x13)
+            b = max(0xff - poi_plugin.get_cumulative_tag_vals(pp_key), 0x3d)
             return r, g, b
 
         while True:
@@ -230,19 +254,17 @@ class UpdateWorker(QtCore.QThread):
                 if new_msg.loc_type == angr_comm_pb2.UserActy.FUNC_ADDR:
                     pp_key = self.mw.workspace.instance.cfg.functions[new_msg.code_location].name
                     print("Sending update: func {}".format(pp_key))
-                    pp.add_interest(pp_key)
-                    fv = self.mw.workspace.views_by_category['functions'][0]
-                    fv.reload()
+                    poi_plugin.add_interest(pp_key)
                 else:
                     pp_key = new_msg.code_location
                     print("Sending update: {:#010x}".format(new_msg.code_location))
-                    pp.add_interest(pp_key)
+                    poi_plugin.add_interest(pp_key)
                     r, g, b = get_green_rgb_from_interest(pp_key)
                     need_cg_update = cg.set_inst_highlight_color(new_msg.code_location, r, g, b)
             elif isinstance(new_msg, angr_comm_pb2.UserPOI):
                 print("Tagging POI (tag='{}') @ {:#010x}".format(new_msg.tag, new_msg.acty.code_location))
                 pp_key = new_msg.acty.code_location
-                pp.add_tag(pp_key, new_msg.tag, 1)
+                poi_plugin.add_tag(pp_key, new_msg.tag, 1)
                 r, g, b = get_blue_rgb_from_tags(pp_key)
                 need_cg_update = cg.set_inst_highlight_color(pp_key, r, g, b)
 
