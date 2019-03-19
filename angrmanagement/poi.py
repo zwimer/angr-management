@@ -51,36 +51,51 @@ KnowledgeBasePlugin.register_default('pois', POIs)
 #########################################################
 
 
+def _set_default_props(addr, type, pb_acty_msg):
+    pb_acty_msg.tool = 'angr-management'
+    pb_acty_msg.timestamp = int(time.time())
+    pb_acty_msg.source = 'TEST_REMOTE_SOURCE'
+    pb_acty_msg.file = 'auth_linux_x64'
+    pb_acty_msg.code_location = addr
+    if type == 'inst':
+        pb_acty_msg.loc_type = angr_comm_pb2.UserActy.INST_ADDR
+    elif type == 'func':
+        pb_acty_msg.loc_type = angr_comm_pb2.UserActy.FUNC_ADDR
+
+
 ######################### DEBUG #########################
 def _make_fake_remote_actions():
     import time
     fake_actions = []
     addrs = \
-        [0x0040085a, 0x0040085b, 0x0040085e,  # first three addrs in main(), first should have 12
-         0x00400750,  # not in first view, should error in add_inst_interest()
-         0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a,  # repeats of above
-         0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a, 0x0040085a,  # repeats of above
-         0x0040085a, 0x0040085b, 0x0040085e, 0x0040085e, 0x0040085e]  # repeats of above
+        [0x0040079a, 0x0040079b, 0x0040079e,  # first three addrs in main(), first should have 12
+         0x00400630,  # not in first view, should error in add_inst_interest()
+         0x0040079a, 0x0040079a, 0x0040079a, 0x0040079a, 0x0040079a,  # repeats of above
+         0x0040079a, 0x0040079a, 0x0040079a, 0x0040079a, 0x0040079a,  # repeats of above
+         0x0040079a, 0x0040079b, 0x0040079e, 0x0040079e, 0x0040079e]  # repeats of above
     for addr in addrs:
-        msg = angr_comm_pb2.UserActy()
-        msg.tool = 'angr-management'
-        msg.timestamp = int(time.time())
-        msg.source = 'TEST_REMOTE_SOURCE'
-        msg.file = 'TEST_BINARY_NAME' # testlib/test_preload
-        msg.code_location = addr
-        msg.loc_type = angr_comm_pb2.UserActy.INST_ADDR
-        fake_actions.append(msg)
+        pb_msg = angr_comm_pb2.UserActy()
+        _set_default_props(addr, 'inst', pb_msg)
+        fake_actions.append(pb_msg)
 
     # main function
-    msg = angr_comm_pb2.UserActy()
-    msg.tool = 'angr-management'
-    msg.timestamp = int(time.time())
-    msg.source = 'TEST_REMOTE_SOURCE'
-    msg.file = 'TEST_BINARY_NAME'   # testlib/test_preload
-    msg.code_location = 0x0040085a
-    msg.loc_type = angr_comm_pb2.UserActy.FUNC_ADDR
-    fake_actions.append(msg)
+    pb_msg = angr_comm_pb2.UserActy()
+    _set_default_props(0x0040079a, 'func', pb_msg)
+    fake_actions.append(pb_msg)
     return fake_actions
+
+def _write_actions(actions):
+    pb_actylist = angr_comm_pb2.ActyList()
+    pb_actylist.user_activity.extend(actions)
+
+    pb_msg = pb_actylist.user_pois.add()
+    pb_msg.tag = 'test_tag'
+    _set_default_props(0x0040079b, 'inst', pb_msg.acty)
+
+    with open('user_acty.msg', 'wb') as f:
+        f.write(pb_actylist.SerializeToString())
+
+
 #########################################################
 
 class UpdateWorker(QtCore.QThread):
@@ -111,7 +126,7 @@ class UpdateWorker(QtCore.QThread):
             else:
                 time.sleep(1) # wait a second for analysis to finish
 
-        def add_poi_interest(key, multiplier = 0):
+        def add_poi_interest(key, multiplier = 1):
             if key in pp:
                 pp[key] += (1 * multiplier)
             else:
@@ -147,6 +162,7 @@ class UpdateWorker(QtCore.QThread):
                     add_poi_interest(new_msg.code_location)
 
                 self.updatePOIs.emit(new_msg.code_location)
+
             elif isinstance(new_msg, angr_comm_pb2.UserPOI):
                 print("Tagging POI (tag='{}') @ {:#10x}".format(new_msg.tag, new_msg.acty.code_location))
                 need_cg_update = cg.add_inst_interest(new_msg.acty.code_location)
@@ -160,36 +176,20 @@ class UpdateWorker(QtCore.QThread):
 
 
 def track_user_acty(addr, type='inst'):
-    msg = angr_comm_pb2.UserActy()
-    msg.tool = 'angr-management'
-    msg.timestamp = int(time.time())
-    msg.source = 'TEST_REMOTE_SOURCE'
-    msg.file = 'TEST_BINARY_NAME'  # testlib/test_preload
-    msg.code_location = addr
-    if type == 'inst':
-        msg.loc_type = angr_comm_pb2.UserActy.INST_ADDR
-    elif type == 'func':
-        msg.loc_type = angr_comm_pb2.UserActy.FUNC_ADDR
+    pb_msg = angr_comm_pb2.UserActy()
+    _set_default_props(addr, type, pb_msg)
 
-    UpdateWorker.local_acty.put(msg)
+    UpdateWorker.local_acty.put(pb_msg)
+
 
 def add_user_poi(addr, type='inst', tag=''):
-    msg = angr_comm_pb2.UserPOI()
-    msg.tag = tag
-
-    msg.acty.tool = 'angr-management'
-    msg.acty.timestamp = int(time.time())
-    msg.acty.source = 'TEST_REMOTE_SOURCE'
-    msg.acty.file = 'TEST_BINARY_NAME'  # testlib/test_preload
-    msg.acty.code_location = addr
-    if type == 'inst':
-        msg.acty.loc_type = angr_comm_pb2.UserActy.INST_ADDR
-    elif type == 'func':
-        msg.acty.loc_type = angr_comm_pb2.UserActy.FUNC_ADDR
-
-    UpdateWorker.local_acty.put(msg)
+    pb_msg = angr_comm_pb2.UserPOI()
+    pb_msg.tag = tag
+    _set_default_props(addr, type, pb_msg.acty)
+    UpdateWorker.local_acty.put(pb_msg)
 
 
 if __name__ == '__main__':
-    fake_remote_actions = _make_fake_remote_actions()
+    _write_actions(_make_fake_remote_actions())
+
 
