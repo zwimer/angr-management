@@ -47,8 +47,8 @@ class QInstruction(QGraphObject):
 
         self.interest = 0
         p = self.disasm.kb.get_plugin('pois')
-        if p:
-            self.interest = p[self.insn.addr]
+        if p and p[self.insn.addr]:
+            self.interest = p[self.insn.addr].interest
 
         #self.setContextMenuPolicy(Qt.CustomContextMenu)
         #self.connect(self, SIGNAL('customContextMenuRequested(QPoint)'), self._on_context_menu)

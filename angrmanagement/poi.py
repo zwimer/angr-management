@@ -7,6 +7,41 @@ import angr_comm_pb2
 from angr.knowledge_plugins.plugin import KnowledgeBasePlugin
 
 
+class AddrData:
+    # TODO: track local/remote interest & tags separately
+    def __init__(self, interest = 0, tags = []):
+        self._interest = interest
+        self._tags = tags
+
+    @property
+    def interest(self):
+        if not isinstance(self._interest, int):
+            self._interest = 0
+        return self._interest
+
+    @interest.setter
+    def interest(self, v):
+        if isinstance(v, int):
+            self._interest = v
+
+    @property
+    def tags(self):
+        if not isinstance(self._tags, dict):
+            self._tags = {}
+        return self._tags
+
+    @tags.setter
+    def tags(self, v):
+        """
+        A tag is a hashable type, usually a string, and its value is
+        how many times that tag has been set.
+        """
+        if v not in self._tags:
+            self._tags[v] = 1
+        else:
+            self._tags[v] += 1
+
+
 class POIs(KnowledgeBasePlugin):
     # TODO: Save POI objects rather than just interest val
     # TODO: With HumanPOIFunc, use addr so names don't matter
@@ -14,44 +49,60 @@ class POIs(KnowledgeBasePlugin):
 
     def __init__(self, kb):
         self._kb = kb
-        self._interest = {}
+        self._addr_data = {}
 
     def __iter__(self):
-        return self._interest.__iter__()
+        return self._addr_data.__iter__()
 
     def __getitem__(self, k):
-        ret = 0 # default
-        try:
-            ret = self._interest[k]
-        except KeyError:
-            pass
-
-        return ret
+        return self._addr_data.get(k, None)
 
     def __setitem__(self, k, v):
         del self[k]
-        self._interest[k] = v
+        self._addr_data[k] = v
 
     def __delitem__(self, k):
-        if k in self._interest:
-            del self._interest[k]
+        if k in self:
+            del self._addr_data[k]
 
     def __contains__(self, k):
-        return k in self._interest
+        return k in self._addr_data
+
+    def quick_add(self, addr, interest=0, tags=[]):
+        self[addr] = AddrData(interest, tags)
+
+    def get_interest(self, key):
+        ret = 0
+        if self[key]:
+            ret = self[key].interest
+        return ret
+
+    def get_tag_count(self, key):
+        ret = 0
+        if self[key]:
+            ret = len(self[key].tags)
+        return ret
+
+    def get_cumulative_tag_val(self, key):
+        ret = 0
+        if self[key]:
+            ret = sum(tv for k,tv in self[key].tags.items())
+        return ret
 
     def get(self, addr):
         return self[addr]
 
     def copy(self):
         o = POIs(self._kb)
-        o._interest = {k: v for k, v in self._interest.items()}
+        o._addr_data = {k: v for k, v in self._addr_data.items()}
 
 
 KnowledgeBasePlugin.register_default('pois', POIs)
+
 #########################################################
 
 
-def _set_default_props(addr, type, pb_acty_msg):
+def _set_pb_default_props(addr, type, pb_acty_msg):
     pb_acty_msg.tool = 'angr-management'
     pb_acty_msg.timestamp = int(time.time())
     pb_acty_msg.source = 'TEST_REMOTE_SOURCE'
@@ -75,12 +126,12 @@ def _make_fake_remote_actions():
          0x0040079a, 0x0040079b, 0x0040079e, 0x0040079e, 0x0040079e]  # repeats of above
     for addr in addrs:
         pb_msg = angr_comm_pb2.UserActy()
-        _set_default_props(addr, 'inst', pb_msg)
+        _set_pb_default_props(addr, 'inst', pb_msg)
         fake_actions.append(pb_msg)
 
     # main function
     pb_msg = angr_comm_pb2.UserActy()
-    _set_default_props(0x0040079a, 'func', pb_msg)
+    _set_pb_default_props(0x0040079a, 'func', pb_msg)
     fake_actions.append(pb_msg)
     return fake_actions
 
@@ -90,7 +141,7 @@ def _write_actions(actions):
 
     pb_msg = pb_actylist.user_pois.add()
     pb_msg.tag = 'test_tag'
-    _set_default_props(0x0040079b, 'inst', pb_msg.acty)
+    _set_pb_default_props(0x0040079b, 'inst', pb_msg.acty)
 
     with open('user_acty.msg', 'wb') as f:
         f.write(pb_actylist.SerializeToString())
@@ -124,13 +175,13 @@ class UpdateWorker(QtCore.QThread):
             if self.mw.workspace.instance.cfg is not None:
                 pp = self.mw.workspace.instance.cfg.kb.get_plugin('pois')
             else:
-                time.sleep(1) # wait a second for analysis to finish
+                time.sleep(1)  # wait a second for analysis to finish
 
-        def add_poi_interest(key, multiplier = 1):
+        def update_poi_plugin(key, interest_addend=1):
             if key in pp:
-                pp[key] += (1 * multiplier)
+                pp[key].interest += interest_addend
             else:
-                pp[key] = (1 * multiplier)
+                pp.quick_add(key, interest_addend)
 
         while True:
             need_cg_update = False
@@ -153,20 +204,20 @@ class UpdateWorker(QtCore.QThread):
                 if new_msg.loc_type == angr_comm_pb2.UserActy.FUNC_ADDR:
                     func_name = self.mw.workspace.instance.cfg.functions[new_msg.code_location].name
                     print("Sending update: func {}".format(func_name))
-                    add_poi_interest(func_name)
+                    update_poi_plugin(func_name)
                     fv = self.mw.workspace.views_by_category['functions'][0]
                     fv.reload()
                 else:
                     print("Sending update: {:#10x}".format(new_msg.code_location))
                     need_cg_update = cg.add_inst_interest(new_msg.code_location)
-                    add_poi_interest(new_msg.code_location)
+                    update_poi_plugin(new_msg.code_location)
 
                 self.updatePOIs.emit(new_msg.code_location)
 
             elif isinstance(new_msg, angr_comm_pb2.UserPOI):
                 print("Tagging POI (tag='{}') @ {:#10x}".format(new_msg.tag, new_msg.acty.code_location))
                 need_cg_update = cg.add_inst_interest(new_msg.acty.code_location)
-                add_poi_interest(new_msg.acty.code_location, 10)
+                update_poi_plugin(new_msg.acty.code_location, 10)
                 self.updatePOIs.emit(new_msg.acty.code_location)
 
             if need_cg_update:
@@ -177,15 +228,14 @@ class UpdateWorker(QtCore.QThread):
 
 def track_user_acty(addr, type='inst'):
     pb_msg = angr_comm_pb2.UserActy()
-    _set_default_props(addr, type, pb_msg)
-
+    _set_pb_default_props(addr, type, pb_msg)
     UpdateWorker.local_acty.put(pb_msg)
 
 
-def add_user_poi(addr, type='inst', tag=''):
+def add_user_poi(addr, type='inst', tag=None):
     pb_msg = angr_comm_pb2.UserPOI()
     pb_msg.tag = tag
-    _set_default_props(addr, type, pb_msg.acty)
+    _set_pb_default_props(addr, type, pb_msg.acty)
     UpdateWorker.local_acty.put(pb_msg)
 
 

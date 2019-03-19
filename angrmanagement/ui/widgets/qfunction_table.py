@@ -141,7 +141,8 @@ class QFunctionTableModel(QAbstractTableModel):
             if func.binary._entry is not None and func.addr == func.binary.entry:
                 color = QColor(0xe5, 0xfb, 0xff)
             elif self.poi_plugin:
-                interest = self.poi_plugin[func.name]
+                interest = self.poi_plugin.get_interest(func.name)
+                interest += self.poi_plugin.get_cumulative_tag_val(func.name)
                 if interest:
                     r = max(0xd6 - 2 * interest, 0)
                     g = max(0xff - interest, 0x3d)
