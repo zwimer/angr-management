@@ -30,16 +30,15 @@ class AddrData:
             self._tags = {}
         return self._tags
 
-    @tags.setter
-    def tags(self, v):
+    def add_tag_value(self, tag, addend=1):
         """
         A tag is a hashable type, usually a string, and its value is
         how many times that tag has been set.
         """
-        if v not in self._tags:
-            self._tags[v] = 1
+        if tag not in self._tags:
+            self._tags[tag] = addend
         else:
-            self._tags[v] += 1
+            self._tags[tag] += addend
 
 
 class POIs(KnowledgeBasePlugin):
@@ -68,14 +67,14 @@ class POIs(KnowledgeBasePlugin):
     def __contains__(self, k):
         return k in self._addr_data
 
-    def quick_add_new(self, key, interest=0, tags=None):
+    def _quick_add_new(self, key, interest=0, tags=None):
         self[key] = AddrData(interest, tags)
 
     def add_interest(self, key, addend=1):
         if self[key]:
             self[key].interest += addend
         else:
-            self.quick_add_new(key, interest=addend)
+            self._quick_add_new(key, interest=addend)
 
     def get_interest(self, key):
         ret = 0
@@ -83,13 +82,19 @@ class POIs(KnowledgeBasePlugin):
             ret = self[key].interest
         return ret
 
+    def add_tag(self, key, tag, tag_val=1):
+        if self[key]:
+            self[key].add_tag_value(tag, tag_val)
+        else:
+            self._quick_add_new(key, interest=0, tags={tag: tag_val})
+
     def get_tag_count(self, key):
         ret = 0
         if self[key]:
             ret = len(self[key].tags)
         return ret
 
-    def get_cumulative_tag_val(self, key):
+    def get_cumulative_tag_vals(self, key):
         ret = 0
         if self[key]:
             ret = sum(tv for k,tv in self[key].tags.items())
@@ -99,8 +104,11 @@ class POIs(KnowledgeBasePlugin):
         return self[addr]
 
     def copy(self):
-        o = POIs(self._kb)
-        o._addr_data = {k: v for k, v in self._addr_data.items()}
+        c = POIs(self._kb)
+        c._addr_data = {k: v for k, v in self._addr_data.items()}
+        for _, ad in c._addr_data.items():
+            ad.tags = {k: v for k, v in ad.tags}
+        return c
 
 
 KnowledgeBasePlugin.register_default('pois', POIs)
@@ -157,7 +165,8 @@ def _write_actions(actions):
 #########################################################
 
 class UpdateWorker(QtCore.QThread):
-    updatePOIs = QtCore.Signal(int)
+    updatePOIs = QtCore.Signal((int,), (str,))
+
     # Note that these are class attributes, not instance. There's no
     # reason to have several queues floating around... I think.
     local_acty = Queue()
@@ -184,12 +193,19 @@ class UpdateWorker(QtCore.QThread):
             else:
                 time.sleep(1)  # wait a second for analysis to finish
 
-        def get_rgb_from_interest(pp_key):
+        def get_green_rgb_from_interest(pp_key):
             multiplier = 6  # HACK: must be larger with fewer people to make it more obvious
             # starting at a light green (0xd6ffdb) to dark green (0x003d13)
             r = max(0xd6 - pp.get_interest(pp_key) * multiplier, 0)
             g = max(0xff - pp.get_interest(pp_key), 0x3d)
             b = max(0xd6 - pp.get_interest(pp_key) * multiplier, 0x13)
+            return r, g, b
+
+        def get_blue_rgb_from_tags(pp_key):
+            multiplier = 6  # HACK: must be larger with fewer people to make it more obvious
+            r = max(0xd6 - pp.get_cumulative_tag_vals(pp_key) * multiplier, 0)
+            g = max(0xd6 - pp.get_cumulative_tag_vals(pp_key) * multiplier, 0x13)
+            b = max(0xff - pp.get_cumulative_tag_vals(pp_key), 0x3d)
             return r, g, b
 
         while True:
@@ -209,8 +225,8 @@ class UpdateWorker(QtCore.QThread):
                 time.sleep(1)
                 continue
 
+            pp_key = None
             if isinstance(new_msg, angr_comm_pb2.UserActy):
-                pp_key = None
                 if new_msg.loc_type == angr_comm_pb2.UserActy.FUNC_ADDR:
                     pp_key = self.mw.workspace.instance.cfg.functions[new_msg.code_location].name
                     print("Sending update: func {}".format(pp_key))
@@ -221,17 +237,16 @@ class UpdateWorker(QtCore.QThread):
                     pp_key = new_msg.code_location
                     print("Sending update: {:#010x}".format(new_msg.code_location))
                     pp.add_interest(pp_key)
-                    r, g, b = get_rgb_from_interest(pp_key)
+                    r, g, b = get_green_rgb_from_interest(pp_key)
                     need_cg_update = cg.set_inst_highlight_color(new_msg.code_location, r, g, b)
-
-                self.updatePOIs.emit(new_msg.code_location)
             elif isinstance(new_msg, angr_comm_pb2.UserPOI):
                 print("Tagging POI (tag='{}') @ {:#010x}".format(new_msg.tag, new_msg.acty.code_location))
                 pp_key = new_msg.acty.code_location
-                pp.add_interest(pp_key, 10)
-                r, g, b = get_rgb_from_interest(pp_key)
+                pp.add_tag(pp_key, new_msg.tag, 1)
+                r, g, b = get_blue_rgb_from_tags(pp_key)
                 need_cg_update = cg.set_inst_highlight_color(pp_key, r, g, b)
-                self.updatePOIs.emit(pp_key)
+
+            self.updatePOIs[type(pp_key)].emit(pp_key)
 
             if need_cg_update:
                 cg.viewport().update()
