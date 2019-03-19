@@ -34,6 +34,8 @@ class QInstruction(QGraphObject):
         self.mode = mode
         self.selected = False
 
+        self._highlight_color = None
+
         # all "widgets"
         self._addr = None
         self._addr_width = None
@@ -44,11 +46,6 @@ class QInstruction(QGraphObject):
         self._string_width = None
 
         self._init_widgets()
-
-        self.interest = 0
-        p = self.disasm.kb.get_plugin('pois')
-        if p and p[self.insn.addr]:
-            self.interest = p[self.insn.addr].interest
 
         #self.setContextMenuPolicy(Qt.CustomContextMenu)
         #self.connect(self, SIGNAL('customContextMenuRequested(QPoint)'), self._on_context_menu)
@@ -98,6 +95,9 @@ class QInstruction(QGraphObject):
         if operand_idx < len(self._operands):
             return self._operands[operand_idx]
         return None
+
+    def set_highlight_color(self, r, g, b):
+        self._highlight_color = QColor(r, g, b)
 
     #
     # Event handlers
@@ -180,22 +180,19 @@ class QInstruction(QGraphObject):
         if self._string is not None:
             self._width += self.GRAPH_STRING_SPACING + self._string_width
 
-    def _paint_interest(self, painter):
-        # TODO: Use threshold before highlighting
-        if self.interest:
-            multiplier = 6 # HACK: must be larger with fewer people to make it more obvious
-            # starting at a light green (0xd6ffdb) to dark green (0x003d13)
-            r = max(0xd6 - self.interest * multiplier, 0)
-            g = max(0xff - self.interest, 0x3d)
-            b = max(0xd6 - self.interest * multiplier, 0x13)
-            interest_color = QColor(r, g, b)
-            painter.setPen(interest_color)
-            painter.setBrush(interest_color)
+    def _paint_highlight(self, painter):
+        """
+        Paints a rectangle around the instruction and operands if `self._highlight_color`
+        is set. Do not use for selection since selection takes precedence.
+        :param painter:
+        :return:
+        """
+        if self._highlight_color is not None:
+            painter.setPen(self._highlight_color)
+            painter.setBrush(self._highlight_color)
             painter.drawRect(self.x, self.y, self.width, self.height)
 
     def _paint_graph(self, painter):
-        if self.interest and not self.selected:
-            self._paint_interest(painter)
 
         # selection background
         if self.selected:
@@ -203,6 +200,8 @@ class QInstruction(QGraphObject):
             painter.setPen(select_color)
             painter.setBrush(select_color)
             painter.drawRect(self.x, self.y, self.width, self.height)
+        elif self._highlight_color:
+            self._paint_highlight(painter)
 
         x = self.x
 

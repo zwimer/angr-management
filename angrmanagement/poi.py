@@ -68,8 +68,14 @@ class POIs(KnowledgeBasePlugin):
     def __contains__(self, k):
         return k in self._addr_data
 
-    def quick_add(self, addr, interest=0, tags=[]):
-        self[addr] = AddrData(interest, tags)
+    def quick_add_new(self, key, interest=0, tags=None):
+        self[key] = AddrData(interest, tags)
+
+    def add_interest(self, key, addend=1):
+        if self[key]:
+            self[key].interest += addend
+        else:
+            self.quick_add_new(key, interest=addend)
 
     def get_interest(self, key):
         ret = 0
@@ -135,6 +141,7 @@ def _make_fake_remote_actions():
     fake_actions.append(pb_msg)
     return fake_actions
 
+
 def _write_actions(actions):
     pb_actylist = angr_comm_pb2.ActyList()
     pb_actylist.user_activity.extend(actions)
@@ -177,11 +184,13 @@ class UpdateWorker(QtCore.QThread):
             else:
                 time.sleep(1)  # wait a second for analysis to finish
 
-        def update_poi_plugin(key, interest_addend=1):
-            if key in pp:
-                pp[key].interest += interest_addend
-            else:
-                pp.quick_add(key, interest_addend)
+        def get_rgb_from_interest(pp_key):
+            multiplier = 6  # HACK: must be larger with fewer people to make it more obvious
+            # starting at a light green (0xd6ffdb) to dark green (0x003d13)
+            r = max(0xd6 - pp.get_interest(pp_key) * multiplier, 0)
+            g = max(0xff - pp.get_interest(pp_key), 0x3d)
+            b = max(0xd6 - pp.get_interest(pp_key) * multiplier, 0x13)
+            return r, g, b
 
         while True:
             need_cg_update = False
@@ -201,24 +210,28 @@ class UpdateWorker(QtCore.QThread):
                 continue
 
             if isinstance(new_msg, angr_comm_pb2.UserActy):
+                pp_key = None
                 if new_msg.loc_type == angr_comm_pb2.UserActy.FUNC_ADDR:
-                    func_name = self.mw.workspace.instance.cfg.functions[new_msg.code_location].name
-                    print("Sending update: func {}".format(func_name))
-                    update_poi_plugin(func_name)
+                    pp_key = self.mw.workspace.instance.cfg.functions[new_msg.code_location].name
+                    print("Sending update: func {}".format(pp_key))
+                    pp.add_interest(pp_key)
                     fv = self.mw.workspace.views_by_category['functions'][0]
                     fv.reload()
                 else:
-                    print("Sending update: {:#10x}".format(new_msg.code_location))
-                    need_cg_update = cg.add_inst_interest(new_msg.code_location)
-                    update_poi_plugin(new_msg.code_location)
+                    pp_key = new_msg.code_location
+                    print("Sending update: {:#010x}".format(new_msg.code_location))
+                    pp.add_interest(pp_key)
+                    r, g, b = get_rgb_from_interest(pp_key)
+                    need_cg_update = cg.set_inst_highlight_color(new_msg.code_location, r, g, b)
 
                 self.updatePOIs.emit(new_msg.code_location)
-
             elif isinstance(new_msg, angr_comm_pb2.UserPOI):
-                print("Tagging POI (tag='{}') @ {:#10x}".format(new_msg.tag, new_msg.acty.code_location))
-                need_cg_update = cg.add_inst_interest(new_msg.acty.code_location)
-                update_poi_plugin(new_msg.acty.code_location, 10)
-                self.updatePOIs.emit(new_msg.acty.code_location)
+                print("Tagging POI (tag='{}') @ {:#010x}".format(new_msg.tag, new_msg.acty.code_location))
+                pp_key = new_msg.acty.code_location
+                pp.add_interest(pp_key, 10)
+                r, g, b = get_rgb_from_interest(pp_key)
+                need_cg_update = cg.set_inst_highlight_color(pp_key, r, g, b)
+                self.updatePOIs.emit(pp_key)
 
             if need_cg_update:
                 cg.viewport().update()
