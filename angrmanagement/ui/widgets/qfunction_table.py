@@ -19,15 +19,13 @@ class QFunctionTableModel(QAbstractTableModel):
     SIZE_COL = 4
     BLOCKS_COL = 5
 
-    def __init__(self, func_list=None, poi_plugin=None):
+    def __init__(self, func_list=None):
 
         super(QFunctionTableModel, self).__init__()
 
         self._func_list = None
         self._raw_func_list = func_list
-        self._poi_plugin = poi_plugin
         self._backcolor_callback = None
-
 
     def __len__(self):
         if self._func_list is not None:
@@ -56,15 +54,6 @@ class QFunctionTableModel(QAbstractTableModel):
     def backcolor_callback(self, v):
         self._backcolor_callback = v
         # self.emit(SIGNAL("layoutChanged()"))
-
-    @property
-    def poi_plugin(self):
-        return self._poi_plugin
-
-    @poi_plugin.setter
-    def poi_plugin(self, v):
-        self._poi_plugin = v
-        #self.emit(SIGNAL("layoutChanged()"))
 
     def filter(self, keyword):
         if not keyword:
@@ -241,18 +230,6 @@ class QFunctionTableView(QTableView):
         self._model.func_list = list(self._functions.values())
 
     @property
-    def poi_plugin(self):
-        if self._model:
-            return self._model.poi_plugin
-        else:
-            return None
-
-    @poi_plugin.setter
-    def poi_plugin(self, v):
-        if self._model:
-            self._model.poi_plugin = v
-
-    @property
     def backcolor_callback(self):
         if self._model:
             return self._model.backcolor_callback
@@ -349,18 +326,6 @@ class QFunctionTable(QWidget):
     def backcolor_callback(self, v):
         if self._table_view:
             self._table_view.backcolor_callback = v
-
-    @property
-    def poi_plugin(self):
-        if self._table_view:
-            return self._table_view.poi_plugin
-        else:
-            return None
-
-    @poi_plugin.setter
-    def poi_plugin(self, v):
-        if self._table_view:
-            self._table_view.poi_plugin = v
 
     #
     # Public methods
