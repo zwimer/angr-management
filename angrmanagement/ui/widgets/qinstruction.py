@@ -200,8 +200,16 @@ class QInstruction(QGraphObject):
             painter.setPen(select_color)
             painter.setBrush(select_color)
             painter.drawRect(self.x, self.y, self.width, self.height)
-        elif self._highlight_color:
-            self._paint_highlight(painter)
+        #elif self._highlight_color:
+        #    self._paint_highlight(painter)
+        elif self.disasm_view.insn_backcolor_callback:
+            r, g, b = self.disasm_view.insn_backcolor_callback(self.insn.addr)
+            if r > -1 and g > -1 and b > -1:
+                highlight_color = QColor(r, g, b)
+                painter.setPen(highlight_color)
+                painter.setBrush(highlight_color)
+                painter.drawRect(self.x, self.y, self.width, self.height)
+
 
         x = self.x
 

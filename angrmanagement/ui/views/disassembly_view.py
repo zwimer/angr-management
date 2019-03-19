@@ -39,6 +39,10 @@ class DisassemblyView(BaseView):
 
         self._insn_addr_on_context_menu = None
 
+        # Callbacks
+        self._insn_backcolor_callback = None
+        self._rename_callback = None
+
         self._init_widgets()
         self._init_menus()
 
@@ -62,6 +66,22 @@ class DisassemblyView(BaseView):
     #
     # Properties
     #
+
+    @property
+    def insn_backcolor_callback(self):
+        return self._insn_backcolor_callback
+
+    @insn_backcolor_callback.setter
+    def insn_backcolor_callback(self, v):
+        self._insn_backcolor_callback = v
+
+    @property
+    def rename_callback(self):
+        return self._rename_callback
+
+    @rename_callback.setter
+    def rename_callback(self, v):
+        self._rename_callback = v
 
     @property
     def disasm(self):
@@ -241,6 +261,8 @@ class DisassemblyView(BaseView):
         else:
             self.current_graph.select_instruction(insn_addr, unique=QApplication.keyboardModifiers() & Qt.CTRL == 0)
             self.current_graph.show_instruction(insn_addr)
+            if self._insn_backcolor_callback:
+                self._insn_backcolor_callback(insn_addr)
 
     def toggle_operand_selection(self, insn_addr, operand_idx):
         """
@@ -294,13 +316,10 @@ class DisassemblyView(BaseView):
 
             # redraw the current block
             self._flow_graph.update_label(addr, is_renaming=is_renaming)
+            # callback
+            if self._rename_callback:
+                self._rename_callback(addr, new_name)
 
-            #
-            # HACK: This is more than a simple 'interest' POI so we'll
-            #       just give 10 POIs for this addr if we rename it
-            #
-            for i in range(0,10):
-                poi.track_user_acty(addr)
 
     def avoid_addr_in_exec(self, addr):
 

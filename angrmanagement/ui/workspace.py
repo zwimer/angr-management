@@ -89,6 +89,11 @@ class Workspace:
     # Public methods
     #
 
+    def set_insn_backcolor_callback(self, callback):
+        dv = self.views_by_category['disassembly'][0]
+        if dv:
+            dv.insn_backcolor_callback = callback
+
     def set_function_backcolor_callback(self, callback):
         fv = self.views_by_category['functions'][0]
         if fv:

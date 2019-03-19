@@ -166,6 +166,10 @@ def _write_actions(actions):
 
 poi_plugin = None
 
+def rename_callback(addr, new_name):
+    for i in range(0, 10):
+        track_user_acty(addr)
+
 
 def get_function_backcolor_rgb(func):
     if func.name is None or func.name is '':
@@ -184,6 +188,29 @@ def get_function_backcolor_rgb(func):
             return r, g, b
 
     return 255, 255, 255
+
+
+def get_insn_backcolor_rgb(addr):
+    multiplier = 6  # HACK: must be larger with fewer people to make it more obvious
+    # Tags are POIs and take precedence over interest, which is passive
+    tv = poi_plugin.get_cumulative_tag_vals(addr)
+    if tv:
+        r = max(0xd6 - tv * multiplier, 0)
+        g = max(0xd6 - tv * multiplier, 0x13)
+        b = max(0xff - tv, 0x3d)
+        return r, g, b
+
+    interest = poi_plugin.get_interest(addr)
+    if interest:
+        # starting at a light green (0xd6ffdb) to dark green (0x003d13)
+        r = max(0xd6 - interest * multiplier, 0)
+        g = max(0xff - interest, 0x3d)
+        b = max(0xd6 - interest * multiplier, 0x13)
+        return r, g, b
+
+    # Our highlight will be ignored if any of the values are -1
+    return -1, -1, -1
+
 
 class UpdateWorker(QtCore.QThread):
     updatePOIs = QtCore.Signal((int,), (str,))
@@ -213,28 +240,11 @@ class UpdateWorker(QtCore.QThread):
             if self.mw.workspace.instance.cfg is not None:
                 poi_plugin = self.mw.workspace.instance.cfg.kb.get_plugin('pois')
                 self.mw.workspace.set_function_backcolor_callback(get_function_backcolor_rgb)
+                self.mw.workspace.set_insn_backcolor_callback(get_insn_backcolor_rgb)
             else:
                 time.sleep(1)  # wait a second for analysis to finish
 
-
-        def get_green_rgb_from_interest(pp_key):
-            multiplier = 6  # HACK: must be larger with fewer people to make it more obvious
-            # starting at a light green (0xd6ffdb) to dark green (0x003d13)
-            r = max(0xd6 - poi_plugin.get_interest(pp_key) * multiplier, 0)
-            g = max(0xff - poi_plugin.get_interest(pp_key), 0x3d)
-            b = max(0xd6 - poi_plugin.get_interest(pp_key) * multiplier, 0x13)
-            return r, g, b
-
-        def get_blue_rgb_from_tags(pp_key):
-            multiplier = 6  # HACK: must be larger with fewer people to make it more obvious
-            r = max(0xd6 - poi_plugin.get_cumulative_tag_vals(pp_key) * multiplier, 0)
-            g = max(0xd6 - poi_plugin.get_cumulative_tag_vals(pp_key) * multiplier, 0x13)
-            b = max(0xff - poi_plugin.get_cumulative_tag_vals(pp_key), 0x3d)
-            return r, g, b
-
         while True:
-            need_cg_update = False
-
             # Get the current view (func graph vs linear)
             cg = self.mw.workspace.views_by_category['disassembly'][0].current_graph
 
@@ -249,6 +259,9 @@ class UpdateWorker(QtCore.QThread):
                 time.sleep(1)
                 continue
 
+            #
+            # We only get here if there was a new message
+            #
             pp_key = None
             if isinstance(new_msg, angr_comm_pb2.UserActy):
                 if new_msg.loc_type == angr_comm_pb2.UserActy.FUNC_ADDR:
@@ -259,21 +272,14 @@ class UpdateWorker(QtCore.QThread):
                     pp_key = new_msg.code_location
                     print("Sending update: {:#010x}".format(new_msg.code_location))
                     poi_plugin.add_interest(pp_key)
-                    r, g, b = get_green_rgb_from_interest(pp_key)
-                    need_cg_update = cg.set_inst_highlight_color(new_msg.code_location, r, g, b)
             elif isinstance(new_msg, angr_comm_pb2.UserPOI):
                 print("Tagging POI (tag='{}') @ {:#010x}".format(new_msg.tag, new_msg.acty.code_location))
                 pp_key = new_msg.acty.code_location
                 poi_plugin.add_tag(pp_key, new_msg.tag, 1)
-                r, g, b = get_blue_rgb_from_tags(pp_key)
-                need_cg_update = cg.set_inst_highlight_color(pp_key, r, g, b)
 
             self.updatePOIs[type(pp_key)].emit(pp_key)
-
-            if need_cg_update:
-                cg.viewport().update()
-
-            time.sleep(0.5)
+            cg.viewport().update()
+            time.sleep(0.25)
 
 
 def track_user_acty(addr, type='inst'):
