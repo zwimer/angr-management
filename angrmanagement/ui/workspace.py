@@ -13,8 +13,6 @@ from ..config import Conf
 from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 
-from .. import poi
-
 
 _l = logging.getLogger(__name__)
 
@@ -62,7 +60,6 @@ class Workspace:
     #
 
     def on_function_selected(self, function):
-        poi.track_user_acty(function.addr, type='func')
         self.views_by_category['disassembly'][0].display_function(function)
 
     def on_cfg_generated(self):
@@ -94,10 +91,20 @@ class Workspace:
         if dv:
             dv.insn_backcolor_callback = callback
 
+    def set_insn_select_callback(self, callback):
+        dv = self.views_by_category['disassembly'][0]
+        if dv:
+            dv.insn_select_callback = callback
+
     def set_function_backcolor_callback(self, callback):
         fv = self.views_by_category['functions'][0]
         if fv:
             fv.backcolor_callback = callback
+
+    def set_function_select_callback(self, callback):
+        fv = self.views_by_category['functions'][0]
+        if fv:
+            fv.func_select_callback = callback
 
     def add_view(self, view, caption, category):
 

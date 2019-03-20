@@ -14,6 +14,7 @@ class FunctionsView(BaseView):
         self._status_label = None
 
         self._backcolor_callback = None
+        self._func_select_callback = None
         self._init_widgets()
 
     @property
@@ -26,6 +27,14 @@ class FunctionsView(BaseView):
         self._backcolor_callback = v
         if self._function_table:
             self._function_table.backcolor_callback = v
+
+    @property
+    def func_select_callback(self):
+        return self._func_select_callback
+
+    @func_select_callback.setter
+    def func_select_callback(self, v):
+        self._func_select_callback = v
 
     def set_function_count(self, count):
         if self._status_label is not None:
@@ -67,3 +76,5 @@ class FunctionsView(BaseView):
         """
 
         self.workspace.on_function_selected(function)
+        if self.func_select_callback:
+            self.func_select_callback(function)

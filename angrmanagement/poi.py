@@ -166,9 +166,18 @@ def _write_actions(actions):
 
 poi_plugin = None
 
+
 def rename_callback(addr, new_name):
-    for i in range(0, 10):
+    for i in range(0, 10):  # HACK: makes it more noticeable
         track_user_acty(addr)
+
+
+def insn_select_callback(addr):
+    track_user_acty(addr)
+
+
+def func_select_callback(func):
+    track_user_acty(func.addr, type='func')
 
 
 def get_function_backcolor_rgb(func):
@@ -239,8 +248,10 @@ class UpdateWorker(QtCore.QThread):
         while poi_plugin is None:
             if self.mw.workspace.instance.cfg is not None:
                 poi_plugin = self.mw.workspace.instance.cfg.kb.get_plugin('pois')
+                self.mw.workspace.set_function_select_callback(func_select_callback)
                 self.mw.workspace.set_function_backcolor_callback(get_function_backcolor_rgb)
                 self.mw.workspace.set_insn_backcolor_callback(get_insn_backcolor_rgb)
+                self.mw.workspace.set_insn_select_callback(insn_select_callback)
             else:
                 time.sleep(1)  # wait a second for analysis to finish
 
@@ -297,5 +308,3 @@ def add_user_poi(addr, type='inst', tag=None):
 
 if __name__ == '__main__':
     _write_actions(_make_fake_remote_actions())
-
-

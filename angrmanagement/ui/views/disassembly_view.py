@@ -12,7 +12,6 @@ from ..dialogs.new_state import NewState
 from ..dialogs.xref import XRef
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from .view import BaseView
-from angrmanagement import poi
 
 
 class DisassemblyView(BaseView):
@@ -42,6 +41,7 @@ class DisassemblyView(BaseView):
         # Callbacks
         self._insn_backcolor_callback = None
         self._rename_callback = None
+        self._insn_select_callback = None
 
         self._init_widgets()
         self._init_menus()
@@ -82,6 +82,14 @@ class DisassemblyView(BaseView):
     @rename_callback.setter
     def rename_callback(self, v):
         self._rename_callback = v
+
+    @property
+    def insn_select_callback(self):
+        return self._insn_select_callback
+
+    @insn_select_callback.setter
+    def insn_select_callback(self, v):
+        self._insn_select_callback = v
 
     @property
     def disasm(self):

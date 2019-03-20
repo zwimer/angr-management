@@ -73,6 +73,8 @@ class QInstruction(QGraphObject):
     def select(self):
         if not self.selected:
             self.toggle_select()
+        if self.disasm_view.insn_select_callback:
+            self.disasm_view.insn_select_callback(self.insn.addr)
 
     def unselect(self):
         if self.selected:
@@ -180,18 +182,6 @@ class QInstruction(QGraphObject):
         if self._string is not None:
             self._width += self.GRAPH_STRING_SPACING + self._string_width
 
-    def _paint_highlight(self, painter):
-        """
-        Paints a rectangle around the instruction and operands if `self._highlight_color`
-        is set. Do not use for selection since selection takes precedence.
-        :param painter:
-        :return:
-        """
-        if self._highlight_color is not None:
-            painter.setPen(self._highlight_color)
-            painter.setBrush(self._highlight_color)
-            painter.drawRect(self.x, self.y, self.width, self.height)
-
     def _paint_graph(self, painter):
 
         # selection background
@@ -200,8 +190,6 @@ class QInstruction(QGraphObject):
             painter.setPen(select_color)
             painter.setBrush(select_color)
             painter.drawRect(self.x, self.y, self.width, self.height)
-        #elif self._highlight_color:
-        #    self._paint_highlight(painter)
         elif self.disasm_view.insn_backcolor_callback:
             r, g, b = self.disasm_view.insn_backcolor_callback(self.insn.addr)
             if r > -1 and g > -1 and b > -1:
@@ -209,7 +197,6 @@ class QInstruction(QGraphObject):
                 painter.setPen(highlight_color)
                 painter.setBrush(highlight_color)
                 painter.drawRect(self.x, self.y, self.width, self.height)
-
 
         x = self.x
 

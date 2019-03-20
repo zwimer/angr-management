@@ -3,7 +3,6 @@ import logging
 from PySide2.QtWidgets import QGraphicsScene, QGraphicsView
 from PySide2.QtGui import QPainter, QKeyEvent
 from PySide2.QtCore import Qt, QSize, Signal, QPoint, QEvent
-from angrmanagement import poi
 
 _l = logging.getLogger('ui.widgets.qgraph')
 
@@ -133,15 +132,6 @@ class QBaseGraph(QZoomingGraphicsView):
 
         else:
             self.reload()
-
-    def set_inst_highlight_color(self, insn_addr, r, g, b):
-        block = self._insn_addr_to_block.get(insn_addr, None)
-        if block is None:
-            print("**ERROR** Failed to find block for address: {:#010x}".format(insn_addr))
-            return False
-
-        block.addr_to_insns[insn_addr].set_highlight_color(r, g, b)
-        return True
 
     def select_instruction(self, insn_addr, unique=True):
         block = self._insn_addr_to_block.get(insn_addr, None)
