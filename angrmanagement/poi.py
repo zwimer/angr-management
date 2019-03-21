@@ -9,9 +9,9 @@ from angr.knowledge_plugins.plugin import KnowledgeBasePlugin
 
 class AddrData:
     # TODO: track local/remote interest & tags separately
-    def __init__(self, interest = 0, tags = []):
+    def __init__(self, interest=0, tags=None):
         self._interest = interest
-        self._tags = tags
+        self._tags = tags if isinstance(tags, dict) else dict()
 
     @property
     def interest(self):
