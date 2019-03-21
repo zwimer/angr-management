@@ -176,6 +176,11 @@ def on_insn_select(addr):
     track_user_acty(addr)
 
 
+def on_set_comment(addr):
+    print("Comment set on {:#010x}".format(addr))
+    track_user_acty(addr)
+
+
 def on_function_select(func):
     track_user_acty(func.addr, type='func')
 
@@ -252,6 +257,7 @@ class UpdateWorker(QtCore.QThread):
                 self.mw.workspace.set_function_backcolor_callback(get_function_backcolor_rgb)
                 self.mw.workspace.set_insn_backcolor_callback(get_insn_backcolor_rgb)
                 self.mw.workspace.set_insn_select_callback(on_insn_select)
+                self.mw.workspace.set_comment_callback(on_set_comment)
                 self.mw.workspace.set_label_rename_callback(on_label_rename)
             else:
                 time.sleep(1)  # wait a second for analysis to finish
@@ -278,11 +284,11 @@ class UpdateWorker(QtCore.QThread):
             if isinstance(new_msg, angr_comm_pb2.UserActy):
                 if new_msg.loc_type == angr_comm_pb2.UserActy.FUNC_ADDR:
                     pp_key = self.mw.workspace.instance.cfg.functions[new_msg.code_location].name
-                    print("Sending update: func {}".format(pp_key))
+                    print("Sending activity update: func {}".format(pp_key))
                     poi_plugin.add_interest(pp_key)
                 else:
                     pp_key = new_msg.code_location
-                    print("Sending update: {:#010x}".format(new_msg.code_location))
+                    print("Sending activity update: {:#010x}".format(new_msg.code_location))
                     poi_plugin.add_interest(pp_key)
             elif isinstance(new_msg, angr_comm_pb2.UserPOI):
                 print("Tagging POI (tag='{}') @ {:#010x}".format(new_msg.tag, new_msg.acty.code_location))

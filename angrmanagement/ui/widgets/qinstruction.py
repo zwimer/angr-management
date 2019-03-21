@@ -106,6 +106,8 @@ class QInstruction(QGraphObject):
     def set_comment(self, new_text):
         self._comment = new_text
         self._update_size()
+        if self.disasm_view.set_comment_callback:
+            self.disasm_view.set_comment_callback(self.insn.addr)
 
     #
     # Event handlers

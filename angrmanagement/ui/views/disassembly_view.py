@@ -43,6 +43,7 @@ class DisassemblyView(BaseView):
         self._insn_backcolor_callback = None
         self._label_rename_callback = None
         self._insn_select_callback = None
+        self._set_comment_callback = None
 
         self._init_widgets()
         self._init_menus()
@@ -91,6 +92,14 @@ class DisassemblyView(BaseView):
     @insn_select_callback.setter
     def insn_select_callback(self, v):
         self._insn_select_callback = v
+
+    @property
+    def set_comment_callback(self):
+        return self._set_comment_callback
+
+    @set_comment_callback.setter
+    def set_comment_callback(self, v):
+        self._set_comment_callback = v
 
     @property
     def disasm(self):

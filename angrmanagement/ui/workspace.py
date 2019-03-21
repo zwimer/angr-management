@@ -101,6 +101,11 @@ class Workspace:
         if dv:
             dv.insn_select_callback = callback
 
+    def set_comment_callback(self, callback):
+        dv = self.views_by_category['disassembly'][0]
+        if dv:
+            dv.set_comment_callback = callback
+
     def set_function_backcolor_callback(self, callback):
         fv = self.views_by_category['functions'][0]
         if fv:
