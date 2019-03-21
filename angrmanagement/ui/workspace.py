@@ -86,6 +86,11 @@ class Workspace:
     # Public methods
     #
 
+    def set_label_rename_callback(self, callback):
+        dv = self.views_by_category['disassembly'][0]
+        if dv:
+            dv.label_rename_callback = callback
+
     def set_insn_backcolor_callback(self, callback):
         dv = self.views_by_category['disassembly'][0]
         if dv:

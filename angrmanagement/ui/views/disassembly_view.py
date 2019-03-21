@@ -40,7 +40,7 @@ class DisassemblyView(BaseView):
 
         # Callbacks
         self._insn_backcolor_callback = None
-        self._rename_callback = None
+        self._label_rename_callback = None
         self._insn_select_callback = None
 
         self._init_widgets()
@@ -76,12 +76,12 @@ class DisassemblyView(BaseView):
         self._insn_backcolor_callback = v
 
     @property
-    def rename_callback(self):
-        return self._rename_callback
+    def label_rename_callback(self):
+        return self._label_rename_callback
 
-    @rename_callback.setter
-    def rename_callback(self, v):
-        self._rename_callback = v
+    @label_rename_callback.setter
+    def label_rename_callback(self, v):
+        self._label_rename_callback = v
 
     @property
     def insn_select_callback(self):
@@ -325,8 +325,8 @@ class DisassemblyView(BaseView):
             # redraw the current block
             self._flow_graph.update_label(addr, is_renaming=is_renaming)
             # callback
-            if self._rename_callback:
-                self._rename_callback(addr, new_name)
+            if self._label_rename_callback:
+                self._label_rename_callback(addr, new_name)
 
 
     def avoid_addr_in_exec(self, addr):

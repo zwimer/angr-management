@@ -167,16 +167,16 @@ def _write_actions(actions):
 poi_plugin = None
 
 
-def rename_callback(addr, new_name):
-    for i in range(0, 10):  # HACK: makes it more noticeable
-        track_user_acty(addr)
+def on_label_rename(addr, new_name):
+    print("Adding label name: {:#010x}='{}'".format(addr, new_name))
+    add_user_poi(addr, tag="label:{}".format(new_name))
 
 
-def insn_select_callback(addr):
+def on_insn_select(addr):
     track_user_acty(addr)
 
 
-def func_select_callback(func):
+def on_function_select(func):
     track_user_acty(func.addr, type='func')
 
 
@@ -248,10 +248,11 @@ class UpdateWorker(QtCore.QThread):
         while poi_plugin is None:
             if self.mw.workspace.instance.cfg is not None:
                 poi_plugin = self.mw.workspace.instance.cfg.kb.get_plugin('pois')
-                self.mw.workspace.set_function_select_callback(func_select_callback)
+                self.mw.workspace.set_function_select_callback(on_function_select)
                 self.mw.workspace.set_function_backcolor_callback(get_function_backcolor_rgb)
                 self.mw.workspace.set_insn_backcolor_callback(get_insn_backcolor_rgb)
-                self.mw.workspace.set_insn_select_callback(insn_select_callback)
+                self.mw.workspace.set_insn_select_callback(on_insn_select)
+                self.mw.workspace.set_label_rename_callback(on_label_rename)
             else:
                 time.sleep(1)  # wait a second for analysis to finish
 
