@@ -184,7 +184,7 @@ def get_function_backcolor_rgb(func):
     if func.name is None or func.name is '':
         return 255, 255, 255
 
-    # HACK for a bug. Should just use `entry`
+    # HACK for a bug. See: https://github.com/angr/cle/pull/175. Won't need None check when merged.
     if func.binary._entry is not None and func.addr == func.binary.entry:
         return 0xe5, 0xfb, 0xff     # light blue
     elif poi_plugin:
