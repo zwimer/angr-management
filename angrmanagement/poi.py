@@ -12,6 +12,7 @@ class AddrData:
     def __init__(self, interest=0, tags=None):
         self._interest = interest
         self._tags = tags if isinstance(tags, dict) else dict()
+        self._comment = None
 
     @property
     def interest(self):
@@ -29,6 +30,17 @@ class AddrData:
         if not isinstance(self._tags, dict):
             self._tags = {}
         return self._tags
+
+    @property
+    def comment(self):
+        return self._comment
+
+    @comment.setter
+    def comment(self, v):
+        if v is not None:
+            self._comment = str(v)
+        else:
+            self._comment = v
 
     def add_tag_value(self, tag, addend=1):
         """
