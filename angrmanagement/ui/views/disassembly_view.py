@@ -377,6 +377,12 @@ class DisassemblyView(BaseView):
             self._flow_graph.induction_variable_analysis = ana
         self._flow_graph.refresh()
 
+    def add_disasm_insn_ctx_menu_entry(self, text, callback):
+        if self._insn_menu:
+            self._insn_menu.add_menu_entry(text, callback)
+
+        return self._insn_menu
+
     #
     # Initialization
     #

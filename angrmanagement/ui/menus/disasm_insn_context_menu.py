@@ -16,7 +16,6 @@ class DisasmInsnContextMenu(Menu):
             MenuEntry('E&xecute symbolically...', self._popup_newstate_dialog),
             MenuEntry('&Avoid in execution...', self._avoid_in_execution),
             MenuSeparator(),
-            MenuEntry('Tag &POI', self._tag_poi)
         ])
 
     @property
@@ -29,8 +28,5 @@ class DisasmInsnContextMenu(Menu):
 
     def _avoid_in_execution(self): self._disasm_view.avoid_addr_in_exec(self.insn_addr)
 
-    def _tag_poi(self):
-        from angrmanagement import poi
-        poi.add_user_poi(self.insn_addr, tag='generic')
-
-
+    def add_menu_entry(self, text, callback):
+        self.entries.append(MenuEntry(text, callback))
