@@ -17,7 +17,8 @@ from .workspace import Workspace
 from .dialogs.load_binary import LoadBinary, LoadBinaryError
 from .dialogs.new_state import NewState
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
-from .. import poi
+from angr_plugins import ChessPlugin
+
 
 class MainWindow(QMainWindow):
     """
@@ -67,8 +68,8 @@ class MainWindow(QMainWindow):
             else:
                 self._open_loadbinary_dialog(file_to_open)
 
-        self.update_worker = poi.UpdateWorker(self)
-        self.update_worker.start()
+        self.activity_monitor = ChessPlugin(self)
+        self.activity_monitor.start()
 
     #
     # Properties
