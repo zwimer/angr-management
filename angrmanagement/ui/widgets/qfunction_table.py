@@ -26,6 +26,7 @@ class QFunctionTableModel(QAbstractTableModel):
 
         self._func_list = None
         self._raw_func_list = func_list
+        self._backcolor_callback = None
 
     def __len__(self):
         if self._func_list is not None:
@@ -45,6 +46,15 @@ class QFunctionTableModel(QAbstractTableModel):
         self._func_list = None
         self._raw_func_list = v
         self.emit(SIGNAL("layoutChanged()"))
+
+    @property
+    def backcolor_callback(self):
+        return self._backcolor_callback
+
+    @backcolor_callback.setter
+    def backcolor_callback(self, v):
+        self._backcolor_callback = v
+
 
     def filter(self, keyword):
         if not keyword:
@@ -124,6 +134,14 @@ class QFunctionTableModel(QAbstractTableModel):
             #for w in widgets:
             #    w.setFlags(w.flags() & ~Qt.ItemIsEditable)
             #    w.setForeground(color)
+
+            return QBrush(color)
+
+        elif role == Qt.BackgroundColorRole:
+            color = QColor(0xff, 0xff, 0xff)
+            if self.backcolor_callback is not None:
+                r, g, b = self.backcolor_callback(func)
+                color = QColor(r, g, b)
 
             return QBrush(color)
 
@@ -216,6 +234,14 @@ class QFunctionTableView(QTableView):
     def subscribe_func_select(self, callback):
         self._selected_func.am_subscribe(callback)
 
+    @property
+    def backcolor_callback(self):
+        return self._model.backcolor_callback
+
+    @backcolor_callback.setter
+    def backcolor_callback(self, v):
+        self._model.backcolor_callback = v
+
     def filter(self, keyword):
         self._model.filter(keyword)
 
@@ -259,6 +285,8 @@ class QFunctionTableFilterBox(QLineEdit):
 
 
 class QFunctionTable(QWidget):
+    _table_view: QFunctionTableView
+
     def __init__(self, parent, selection_callback=None):
         super(QFunctionTable, self).__init__(parent)
 
@@ -282,6 +310,18 @@ class QFunctionTable(QWidget):
             self._table_view.function_manager = v
         else:
             raise ValueError("QFunctionTableView is uninitialized.")
+
+    @property
+    def backcolor_callback(self):
+        ret = None
+        if self._table_view:
+            ret = self._table_view.backcolor_callback
+        return ret
+
+    @backcolor_callback.setter
+    def backcolor_callback(self, v):
+        if self._table_view:
+            self._table_view.backcolor_callback = v
 
     #
     # Public methods
