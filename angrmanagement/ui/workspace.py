@@ -59,8 +59,11 @@ class Workspace:
     # Events
     #
 
-    def on_function_selected(self, function):
-        self.views_by_category['disassembly'][0].display_function(function)
+
+    def on_function_selected(self, func):
+
+        self.views_by_category['disassembly'][0].display_function(func)
+
 
     def on_cfg_generated(self):
 
