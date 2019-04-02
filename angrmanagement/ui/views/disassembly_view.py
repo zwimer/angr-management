@@ -43,6 +43,7 @@ class DisassemblyView(BaseView):
         # Callbacks
         self._insn_backcolor_callback = None
         self._insn_select_backcolor_callback = None
+        self._label_rename_callback = None
 
         self._init_widgets()
         self._init_menus()
@@ -67,22 +68,6 @@ class DisassemblyView(BaseView):
     #
     # Properties
     #
-
-    @property
-    def insn_backcolor_callback(self):
-        return self._insn_backcolor_callback
-
-    @insn_backcolor_callback.setter
-    def insn_backcolor_callback(self, v):
-        self._insn_backcolor_callback = v
-
-    @property
-    def insn_select_backcolor_callback(self):
-        return self._insn_select_backcolor_callback
-
-    @insn_select_backcolor_callback.setter
-    def insn_select_backcolor_callback(self, v):
-        self._insn_select_backcolor_callback = v
 
     @property
     def disasm(self):
@@ -125,6 +110,34 @@ class DisassemblyView(BaseView):
             return self._linear_viewer
         else:
             return self._flow_graph
+
+    #
+    # Callbacks
+    #
+
+    @property
+    def insn_backcolor_callback(self):
+        return self._insn_backcolor_callback
+
+    @insn_backcolor_callback.setter
+    def insn_backcolor_callback(self, v):
+        self._insn_backcolor_callback = v
+
+    @property
+    def insn_select_backcolor_callback(self):
+        return self._insn_select_backcolor_callback
+
+    @insn_select_backcolor_callback.setter
+    def insn_select_backcolor_callback(self, v):
+        self._insn_select_backcolor_callback = v
+
+    @property
+    def label_rename_callback(self):
+        return self._label_rename_callback
+
+    @label_rename_callback.setter
+    def label_rename_callback(self, v):
+        self._label_rename_callback = v
 
     #
     # UI
@@ -332,6 +345,10 @@ class DisassemblyView(BaseView):
                 if addr in kb.labels:
                     is_renaming = True
                 kb.labels[addr] = new_name
+
+            # callback first
+            if self._label_rename_callback:
+                self._label_rename_callback(addr, new_name)
 
             # redraw the current block
             self._flow_graph.update_label(addr, is_renaming=is_renaming)
